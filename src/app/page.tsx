@@ -5,20 +5,57 @@ import { SpeedChart } from "@/components/dashboard/speed-chart";
 import { LaneDistribution } from "@/components/dashboard/lane-distribution";
 import { SensorStats } from "@/components/dashboard/sensor-stats";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SettingsPanel } from "@/components/settings-panel";
 import { Gauge, TrendingUp, Activity, Zap } from "lucide-react";
 import { useMemo } from "react";
 import { useRealtimeSpeedData } from "@/hooks/use-realtime-speed-data";
+import { useSettings } from "@/contexts/settings-context";
 
 export default function Home() {
-  // Use realtime data that updates every 3 seconds
-  const realtimeData = useRealtimeSpeedData(3000, 120);
+  const { settings } = useSettings();
+
+  // Use realtime data with settings
+  const realtimeData = useRealtimeSpeedData(
+    settings.updateInterval,
+    settings.maxDataPoints
+  );
+
+  // Filter data based on settings
+  const filteredData = useMemo(() => {
+    return realtimeData.filter((data) => {
+      // Filter by sensor
+      const sensorMatch =
+        settings.selectedSensors.length === 0 ||
+        settings.selectedSensors.includes(data.sensor_name || "");
+
+      // Filter by lane
+      const laneMatch = settings.selectedLanes.includes(data.lane);
+
+      // Filter by speed thresholds if alerts are enabled
+      const speedMatch =
+        !settings.enableAlerts ||
+        (data.speed >= settings.speedThresholdMin &&
+          data.speed <= settings.speedThresholdMax);
+
+      return sensorMatch && laneMatch && speedMatch;
+    });
+  }, [realtimeData, settings]);
 
   const stats = useMemo(() => {
-    const speeds = realtimeData.map((d) => d.speed);
+    if (filteredData.length === 0) {
+      return {
+        avgSpeed: 0,
+        maxSpeed: 0,
+        minSpeed: 0,
+        totalReadings: 0,
+      };
+    }
+
+    const speeds = filteredData.map((d) => d.speed);
     const avgSpeed = speeds.reduce((a, b) => a + b, 0) / speeds.length;
     const maxSpeed = Math.max(...speeds);
     const minSpeed = Math.min(...speeds);
-    const totalReadings = realtimeData.length;
+    const totalReadings = filteredData.length;
 
     return {
       avgSpeed: Math.round(avgSpeed * 10) / 10,
@@ -26,7 +63,7 @@ export default function Home() {
       minSpeed: Math.round(minSpeed * 10) / 10,
       totalReadings,
     };
-  }, [realtimeData]);
+  }, [filteredData]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -46,6 +83,7 @@ export default function Home() {
                 <div className="h-2 w-2 rounded-full bg-chart-4 animate-pulse"></div>
                 <span className="text-sm text-muted-foreground">Données en temps réel</span>
               </div>
+              <SettingsPanel />
               <ThemeToggle />
             </div>
           </div>
@@ -86,15 +124,19 @@ export default function Home() {
 
         {/* Charts Grid */}
         <div className="grid gap-6 lg:grid-cols-2 mb-8">
-          <div className="lg:col-span-2">
-            <SpeedChart
-              data={realtimeData}
-              title="Évolution des vitesses"
-              description="Vitesses enregistrées sur les 2 dernières heures (mise à jour toutes les 3s)"
-            />
-          </div>
-          <LaneDistribution data={realtimeData} />
-          <SensorStats data={realtimeData} />
+          {settings.showSpeedChart && (
+            <div className="lg:col-span-2">
+              <SpeedChart
+                data={filteredData}
+                title="Évolution des vitesses"
+                description={`Vitesses enregistrées (mise à jour toutes les ${settings.updateInterval / 1000}s)`}
+              />
+            </div>
+          )}
+          {settings.showLaneDistribution && (
+            <LaneDistribution data={filteredData} />
+          )}
+          {settings.showSensorStats && <SensorStats data={filteredData} />}
         </div>
 
         {/* Footer Info */}
