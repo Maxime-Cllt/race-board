@@ -4,6 +4,11 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { SpeedChart } from "@/components/dashboard/speed-chart";
 import { LaneDistribution } from "@/components/dashboard/lane-distribution";
 import { SensorStats } from "@/components/dashboard/sensor-stats";
+import { AverageSpeedBySensor } from "@/components/dashboard/average-speed-by-sensor";
+import { SpeedDistribution } from "@/components/dashboard/speed-distribution";
+import { HourlyTrend } from "@/components/dashboard/hourly-trend";
+import { SpeedRecords } from "@/components/dashboard/speed-records";
+import { ActivityHeatmap } from "@/components/dashboard/activity-heatmap";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SettingsPanel } from "@/components/settings-panel";
 import { Gauge, TrendingUp, Activity, Zap } from "lucide-react";
@@ -137,6 +142,31 @@ export default function Home() {
             <LaneDistribution data={filteredData} />
           )}
           {settings.showSensorStats && <SensorStats data={filteredData} />}
+        </div>
+
+        {/* Advanced Analytics Section */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
+            <Activity className="h-6 w-6 text-primary" />
+            Analyses Avancées
+          </h2>
+
+          {/* Row 1: Trend and Records */}
+          <div className="grid gap-6 lg:grid-cols-2 mb-6">
+            <HourlyTrend data={filteredData} />
+            <SpeedRecords data={filteredData} />
+          </div>
+
+          {/* Row 2: Distribution and Average by Sensor */}
+          <div className="grid gap-6 lg:grid-cols-2 mb-6">
+            <SpeedDistribution data={filteredData} />
+            <AverageSpeedBySensor data={filteredData} />
+          </div>
+
+          {/* Row 3: Activity Heatmap */}
+          <div className="grid gap-6 mb-6">
+            <ActivityHeatmap data={filteredData} />
+          </div>
         </div>
 
         {/* Footer Info */}
