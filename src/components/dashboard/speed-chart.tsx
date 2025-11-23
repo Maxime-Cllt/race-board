@@ -91,7 +91,7 @@ export function SpeedChart({ data, title = "Vitesses en temps réel", descriptio
         sampling: "lttb",
         connectNulls: false,
         itemStyle: {
-          color: "#dc2626",
+          color: "#3b82f6",
         },
         lineStyle: {
           width: 2,
@@ -106,11 +106,11 @@ export function SpeedChart({ data, title = "Vitesses en temps réel", descriptio
             colorStops: [
               {
                 offset: 0,
-                color: "rgba(220, 38, 38, 0.3)",
+                color: "rgba(59, 130, 246, 0.3)",
               },
               {
                 offset: 1,
-                color: "rgba(220, 38, 38, 0.05)",
+                color: "rgba(59, 130, 246, 0.05)",
               },
             ],
           },
@@ -126,7 +126,7 @@ export function SpeedChart({ data, title = "Vitesses en temps réel", descriptio
         sampling: "lttb",
         connectNulls: false,
         itemStyle: {
-          color: "#ea580c",
+          color: "#f97316",
         },
         lineStyle: {
           width: 2,
@@ -141,11 +141,11 @@ export function SpeedChart({ data, title = "Vitesses en temps réel", descriptio
             colorStops: [
               {
                 offset: 0,
-                color: "rgba(234, 88, 12, 0.3)",
+                color: "rgba(249, 115, 22, 0.3)",
               },
               {
                 offset: 1,
-                color: "rgba(234, 88, 12, 0.05)",
+                color: "rgba(249, 115, 22, 0.05)",
               },
             ],
           },

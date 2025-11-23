@@ -14,6 +14,21 @@ Race Board is a monitoring application designed to visualize and analyze racetra
 user-friendly interface to track performance metrics, visualize data trends, and gain insights into
 racing activities.
 
+<div align="center">
+
+<table style="border-collapse: collapse; border: none;">
+  <tr>
+    <td><img src="assets/sc1.png" alt="Screenshot 1" width="350"></td>
+    <td><img src="assets/sc2.png" alt="Screenshot 2" width="350"></td>
+  </tr>
+  <tr>
+    <td><img src="assets/sc3.png" alt="Screenshot 3" width="350"></td>
+    <td><img src="assets/sc4.png" alt="Screenshot 4" width="350"></td>
+  </tr>
+</table>
+
+</div>
+
 ## ✨ Key Features
 
 - ⚡ **Real-time Data Visualization**: Visualize data in real-time with interactive charts and
@@ -34,23 +49,6 @@ racing activities.
 ```bash
 pnpm run dev
  ```
-
-## 📸 Screenshots
-
-<div align="center">
-
-<table style="border-collapse: collapse; border: none;">
-  <tr>
-    <td><img src="assets/sc1.png" alt="Screenshot 1" width="350"></td>
-    <td><img src="assets/sc2.png" alt="Screenshot 2" width="350"></td>
-  </tr>
-  <tr>
-    <td><img src="assets/sc3.png" alt="Screenshot 3" width="350"></td>
-    <td><img src="assets/sc4.png" alt="Screenshot 4" width="350"></td>
-  </tr>
-</table>
-
-</div>
 
 ## 🔗 See Also
 

@@ -53,8 +53,8 @@ export function LaneDistribution({ data }: LaneDistributionProps) {
           },
         },
         data: [
-          { value: leftCount, name: "Voie gauche", itemStyle: { color: "#dc2626" } },
-          { value: rightCount, name: "Voie droite", itemStyle: { color: "#ea580c" } },
+          { value: leftCount, name: "Voie gauche", itemStyle: { color: "#3b82f6" } },
+          { value: rightCount, name: "Voie droite", itemStyle: { color: "#f97316" } },
         ],
       },
     ],
