@@ -194,7 +194,7 @@ export function SettingsPanel() {
 
           {/* Affichage des composants */}
           <div className="space-y-4 border-t pt-4">
-            <h3 className="text-sm font-semibold">Composants à afficher</h3>
+            <h3 className="text-sm font-semibold">Graphiques de base</h3>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="show-chart" className="text-sm cursor-pointer">
@@ -229,6 +229,73 @@ export function SettingsPanel() {
                   checked={settings.showSensorStats}
                   onCheckedChange={(checked) =>
                     updateSettings({ showSensorStats: checked })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Analyses avancées */}
+          <div className="space-y-4 border-t pt-4">
+            <h3 className="text-sm font-semibold">Analyses avancées</h3>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show-hourly-trend" className="text-sm cursor-pointer">
+                  Tendance horaire
+                </Label>
+                <Switch
+                  id="show-hourly-trend"
+                  checked={settings.showHourlyTrend}
+                  onCheckedChange={(checked) =>
+                    updateSettings({ showHourlyTrend: checked })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show-speed-records" className="text-sm cursor-pointer">
+                  Records de vitesse
+                </Label>
+                <Switch
+                  id="show-speed-records"
+                  checked={settings.showSpeedRecords}
+                  onCheckedChange={(checked) =>
+                    updateSettings({ showSpeedRecords: checked })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show-speed-distribution" className="text-sm cursor-pointer">
+                  Distribution des vitesses
+                </Label>
+                <Switch
+                  id="show-speed-distribution"
+                  checked={settings.showSpeedDistribution}
+                  onCheckedChange={(checked) =>
+                    updateSettings({ showSpeedDistribution: checked })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show-avg-sensor" className="text-sm cursor-pointer">
+                  Vitesse moy. par capteur
+                </Label>
+                <Switch
+                  id="show-avg-sensor"
+                  checked={settings.showAverageSpeedBySensor}
+                  onCheckedChange={(checked) =>
+                    updateSettings({ showAverageSpeedBySensor: checked })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show-activity-heatmap" className="text-sm cursor-pointer">
+                  Heatmap d&apos;activité
+                </Label>
+                <Switch
+                  id="show-activity-heatmap"
+                  checked={settings.showActivityHeatmap}
+                  onCheckedChange={(checked) =>
+                    updateSettings({ showActivityHeatmap: checked })
                   }
                 />
               </div>

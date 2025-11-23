@@ -145,29 +145,41 @@ export default function Home() {
         </div>
 
         {/* Advanced Analytics Section */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
-            <Activity className="h-6 w-6 text-primary" />
-            Analyses Avancées
-          </h2>
+        {(settings.showHourlyTrend ||
+          settings.showSpeedRecords ||
+          settings.showSpeedDistribution ||
+          settings.showAverageSpeedBySensor ||
+          settings.showActivityHeatmap) && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
+              <Activity className="h-6 w-6 text-primary" />
+              Analyses Avancées
+            </h2>
 
-          {/* Row 1: Trend and Records */}
-          <div className="grid gap-6 lg:grid-cols-2 mb-6">
-            <HourlyTrend data={filteredData} />
-            <SpeedRecords data={filteredData} />
-          </div>
+            {/* Row 1: Trend and Records */}
+            {(settings.showHourlyTrend || settings.showSpeedRecords) && (
+              <div className="grid gap-6 lg:grid-cols-2 mb-6">
+                {settings.showHourlyTrend && <HourlyTrend data={filteredData} />}
+                {settings.showSpeedRecords && <SpeedRecords data={filteredData} />}
+              </div>
+            )}
 
-          {/* Row 2: Distribution and Average by Sensor */}
-          <div className="grid gap-6 lg:grid-cols-2 mb-6">
-            <SpeedDistribution data={filteredData} />
-            <AverageSpeedBySensor data={filteredData} />
-          </div>
+            {/* Row 2: Distribution and Average by Sensor */}
+            {(settings.showSpeedDistribution || settings.showAverageSpeedBySensor) && (
+              <div className="grid gap-6 lg:grid-cols-2 mb-6">
+                {settings.showSpeedDistribution && <SpeedDistribution data={filteredData} />}
+                {settings.showAverageSpeedBySensor && <AverageSpeedBySensor data={filteredData} />}
+              </div>
+            )}
 
-          {/* Row 3: Activity Heatmap */}
-          <div className="grid gap-6 mb-6">
-            <ActivityHeatmap data={filteredData} />
+            {/* Row 3: Activity Heatmap */}
+            {settings.showActivityHeatmap && (
+              <div className="grid gap-6 mb-6">
+                <ActivityHeatmap data={filteredData} />
+              </div>
+            )}
           </div>
-        </div>
+        )}
 
         {/* Footer Info */}
         <div className="mt-8 p-6 bg-card border border-border rounded-lg">
