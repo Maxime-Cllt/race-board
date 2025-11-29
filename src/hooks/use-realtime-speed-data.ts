@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { SpeedData, Lane } from "@/types/speed-data";
 import { mockSpeedData } from "@/lib/mock-data";
+import { speedAPI } from "@/services/speed-api";
+import { config } from "@/config/env";
 
 const sensors = [
   "Sector 1 Entry",
@@ -27,28 +29,107 @@ function generateRealtimeData(id: number): SpeedData {
   };
 }
 
+/**
+ * Hook to fetch real-time speed data
+ * - In SIMULATION mode: Generates mock data at regular intervals (no API needed)
+ * - In DEV mode: Connects to development API via SSE for real-time updates
+ * - In PROD mode: Connects to production API via SSE for real-time updates
+ */
 export function useRealtimeSpeedData(intervalMs: number = 3000, maxDataPoints: number = 120) {
-  const [data, setData] = useState<SpeedData[]>(mockSpeedData);
-  const [lastId, setLastId] = useState(mockSpeedData.length);
+  const [data, setData] = useState<SpeedData[]>([]);
+  const [lastId, setLastId] = useState(0);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const newDataPoint = generateRealtimeData(lastId + 1);
+    // Simulation mode: Use mock data with simulated real-time updates
+    if (config.isSimulation) {
+      console.log("🎮 SIMULATION MODE: Using mock data (no API connection)");
+      console.log(`   Generating data every ${intervalMs / 1000}s`);
 
-      setData((prevData) => {
-        const newData = [...prevData, newDataPoint];
-        // Keep only the last maxDataPoints
-        if (newData.length > maxDataPoints) {
-          return newData.slice(-maxDataPoints);
+      // Initialize with mock data
+      setData(mockSpeedData);
+      setLastId(mockSpeedData.length);
+      setIsConnected(true); // Considered "connected" in simulation
+
+      // Simulate real-time updates
+      const interval = setInterval(() => {
+        const newDataPoint = generateRealtimeData(lastId + 1);
+
+        setData((prevData) => {
+          const newData = [...prevData, newDataPoint];
+          // Keep only the last maxDataPoints
+          if (newData.length > maxDataPoints) {
+            return newData.slice(-maxDataPoints);
+          }
+          return newData;
+        });
+
+        setLastId((prevId) => prevId + 1);
+      }, intervalMs);
+
+      return () => clearInterval(interval);
+    }
+
+    // Development or Production mode: Connect to real API via SSE
+    if (config.requiresAPI) {
+      const mode = config.isDevelopment ? "DEV" : "PROD";
+      const emoji = config.isDevelopment ? "🔧" : "🚀";
+
+      console.log(`${emoji} ${mode} MODE: Connecting to API at ${config.apiBaseUrl}`);
+
+      // Fetch initial data from API
+      const fetchInitialData = async () => {
+        try {
+          console.log(`   Fetching initial data (limit: ${maxDataPoints})...`);
+          const initialData = await speedAPI.getSpeeds(maxDataPoints);
+          if (initialData.length > 0) {
+            setData(initialData);
+            console.log(`   ✅ Loaded ${initialData.length} initial speed records from API`);
+          } else {
+            console.warn(`   ⚠️  No initial data available from API`);
+          }
+        } catch (error) {
+          console.error(`   ❌ Error fetching initial data:`, error);
         }
-        return newData;
-      });
+      };
 
-      setLastId((prevId) => prevId + 1);
-    }, intervalMs);
+      fetchInitialData();
 
-    return () => clearInterval(interval);
-  }, [lastId, intervalMs, maxDataPoints]);
+      // Connect to SSE stream for real-time updates
+      console.log(`   Establishing SSE connection to ${config.apiBaseUrl}/api/speeds/stream`);
+      const eventSource = speedAPI.connectToSpeedStream(
+        (newSpeedData) => {
+          console.log("   📡 Received speed data:", newSpeedData);
+          setIsConnected(true);
+
+          setData((prevData) => {
+            const newData = [...prevData, newSpeedData];
+            // Keep only the last maxDataPoints
+            if (newData.length > maxDataPoints) {
+              return newData.slice(-maxDataPoints);
+            }
+            return newData;
+          });
+        },
+        (error) => {
+          console.error("   ❌ SSE connection error:", error);
+          setIsConnected(false);
+        }
+      );
+
+      eventSource.onopen = () => {
+        console.log("   ✅ SSE connection established successfully");
+        setIsConnected(true);
+      };
+
+      // Cleanup: Close SSE connection on unmount
+      return () => {
+        console.log(`   🔌 Closing SSE connection`);
+        eventSource.close();
+        setIsConnected(false);
+      };
+    }
+  }, [intervalMs, maxDataPoints, lastId]);
 
   return data;
 }

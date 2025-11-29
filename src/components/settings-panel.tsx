@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Settings, X, RotateCcw } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Settings, X, RotateCcw, QrCode, Download, RefreshCw } from "lucide-react";
+import QRCodeLib from "qrcode";
+import { getShareableURL, getLocalIP, replaceLocalhostWithIP } from "@/lib/get-local-ip";
 import {
   Sheet,
   SheetContent,
@@ -45,6 +47,65 @@ const MAX_DATA_POINTS_OPTIONS = [
 export function SettingsPanel() {
   const { settings, updateSettings, resetSettings } = useSettings();
   const [open, setOpen] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
+  const [shareableUrl, setShareableUrl] = useState<string>("");
+  const [localIP, setLocalIP] = useState<string>("");
+  const [manualIP, setManualIP] = useState<string>("");
+  const [isLoadingQR, setIsLoadingQR] = useState(true);
+
+  // Generate QR code
+  const generateQRCode = async (url: string) => {
+    try {
+      const dataUrl = await QRCodeLib.toDataURL(url, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: "#000000",
+          light: "#FFFFFF",
+        },
+      });
+      setQrCodeUrl(dataUrl);
+    } catch (err) {
+      console.error("Error generating QR code:", err);
+    }
+  };
+
+  // Get shareable URL and generate QR code
+  const updateQRCode = async () => {
+    setIsLoadingQR(true);
+
+    if (typeof window === "undefined") {
+      setIsLoadingQR(false);
+      return;
+    }
+
+    let url = window.location.href;
+
+    // If manual IP is set, use it
+    if (manualIP) {
+      url = replaceLocalhostWithIP(url, manualIP);
+      setShareableUrl(url);
+      await generateQRCode(url);
+      setIsLoadingQR(false);
+      return;
+    }
+
+    // Otherwise, try to detect IP automatically
+    const detectedIP = await getLocalIP();
+    if (detectedIP) {
+      setLocalIP(detectedIP);
+      url = replaceLocalhostWithIP(url, detectedIP);
+    }
+
+    setShareableUrl(url);
+    await generateQRCode(url);
+    setIsLoadingQR(false);
+  };
+
+  // Generate QR code when component mounts or manual IP changes
+  useEffect(() => {
+    updateQRCode();
+  }, [manualIP]);
 
   const toggleSensor = (sensor: string) => {
     const newSensors = settings.selectedSensors.includes(sensor)
@@ -62,6 +123,15 @@ export function SettingsPanel() {
 
   const isSensorSelected = (sensor: string) => {
     return settings.selectedSensors.length === 0 || settings.selectedSensors.includes(sensor);
+  };
+
+  const downloadQRCode = () => {
+    if (qrCodeUrl) {
+      const link = document.createElement("a");
+      link.href = qrCodeUrl;
+      link.download = "race-board-qrcode.png";
+      link.click();
+    }
   };
 
   return (
@@ -83,8 +153,81 @@ export function SettingsPanel() {
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
+          {/* QR Code Section */}
+          <div className="space-y-4 p-4 border rounded-lg bg-card">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <QrCode className="h-5 w-5 text-primary" />
+                <h3 className="text-sm font-semibold">QR Code de partage</h3>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={updateQRCode}
+                disabled={isLoadingQR}
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoadingQR ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Scannez ce code pour accéder au dashboard depuis un autre appareil
+            </p>
+
+            {/* Manual IP Input */}
+            <div className="space-y-2">
+              <Label htmlFor="manual-ip" className="text-xs">
+                Adresse IP manuelle (optionnel)
+              </Label>
+              <div className="flex gap-2">
+                <input
+                  id="manual-ip"
+                  type="text"
+                  placeholder={localIP || "ex: 192.168.1.75"}
+                  className="flex-1 px-3 py-2 border rounded-md text-sm"
+                  value={manualIP}
+                  onChange={(e) => setManualIP(e.target.value)}
+                />
+              </div>
+              {localIP && !manualIP && (
+                <p className="text-xs text-green-600">
+                  ✓ IP détectée automatiquement: {localIP}
+                </p>
+              )}
+            </div>
+
+            {qrCodeUrl && !isLoadingQR && (
+              <div className="flex flex-col items-center gap-3">
+                <div className="p-3 bg-white rounded-lg border-2">
+                  <img
+                    src={qrCodeUrl}
+                    alt="QR Code pour accéder au dashboard"
+                    className="w-48 h-48"
+                  />
+                </div>
+                <p className="text-xs text-center text-muted-foreground break-all px-2">
+                  {shareableUrl}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadQRCode}
+                  className="w-full"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Télécharger le QR Code
+                </Button>
+              </div>
+            )}
+
+            {isLoadingQR && (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            )}
+          </div>
+
           {/* Filtres de capteurs */}
-          <div className="space-y-4">
+          <div className="space-y-4 border-t pt-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold">Capteurs</h3>
               {settings.selectedSensors.length > 0 && (

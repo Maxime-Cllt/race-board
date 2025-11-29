@@ -138,6 +138,21 @@ export function SpeedDistribution({ data }: SpeedDistributionProps) {
     ],
   };
 
+  // Don't render chart if no data available
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Distribution des vitesses</CardTitle>
+          <CardDescription>Répartition des vitesses par plages de {binSize} km/h</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center h-[300px] text-muted-foreground">
+          Aucune donnée disponible
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>

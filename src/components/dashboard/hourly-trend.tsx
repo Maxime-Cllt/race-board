@@ -167,6 +167,21 @@ export function HourlyTrend({ data }: HourlyTrendProps) {
     ],
   };
 
+  // Don't render chart if no data available
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Tendance horaire</CardTitle>
+          <CardDescription>Vitesse moyenne et volume d&apos;activité par heure</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center h-[350px] text-muted-foreground">
+          Aucune donnée disponible
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>

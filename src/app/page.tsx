@@ -15,6 +15,8 @@ import { Gauge, TrendingUp, Activity, Zap } from "lucide-react";
 import { useMemo } from "react";
 import { useRealtimeSpeedData } from "@/hooks/use-realtime-speed-data";
 import { useSettings } from "@/contexts/settings-context";
+import { config } from "@/config/env";
+import { Badge } from "@/components/ui/badge";
 
 export default function Home() {
   const { settings } = useSettings();
@@ -85,8 +87,18 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
+                <Badge variant={config.isSimulation ? "outline" : config.isDevelopment ? "secondary" : "default"}>
+                  {config.isSimulation ? "🎮 SIMULATION" : config.isDevelopment ? "🔧 DEV" : "🚀 PROD"}
+                </Badge>
+                {config.requiresAPI && (
+                  <span className="text-xs text-muted-foreground">
+                    {config.apiBaseUrl}
+                  </span>
+                )}
                 <div className="h-2 w-2 rounded-full bg-chart-4 animate-pulse"></div>
-                <span className="text-sm text-muted-foreground">Données en temps réel</span>
+                <span className="text-sm text-muted-foreground">
+                  {config.isSimulation ? "Données simulées" : "Données en temps réel"}
+                </span>
               </div>
               <SettingsPanel />
               <ThemeToggle />
@@ -191,7 +203,13 @@ export default function Home() {
               <h3 className="font-semibold text-lg mb-1">À propos de Race Board</h3>
               <p className="text-muted-foreground text-sm">
                 Système de Business Intelligence pour l&apos;analyse des données de vitesse collectées par capteurs sur circuit.
-                Les données affichées sont des données de test générées aléatoirement pour la démonstration de l&apos;interface.
+                {config.isSimulation ? (
+                  <span> Mode SIMULATION : Les données affichées sont générées aléatoirement pour la démonstration de l&apos;interface.</span>
+                ) : config.isDevelopment ? (
+                  <span> Mode DEV : Connecté à l&apos;API de développement à {config.apiBaseUrl}.</span>
+                ) : (
+                  <span> Mode PROD : Connecté à l&apos;API de production pour des données en temps réel.</span>
+                )}
               </p>
             </div>
           </div>

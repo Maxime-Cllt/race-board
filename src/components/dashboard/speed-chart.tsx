@@ -155,6 +155,21 @@ export function SpeedChart({ data, title = "Vitesses en temps réel", descriptio
     ],
   };
 
+  // Don't render chart if no data available
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{title}</CardTitle>
+          {description && <CardDescription>{description}</CardDescription>}
+        </CardHeader>
+        <CardContent className="flex items-center justify-center h-[300px] text-muted-foreground">
+          Aucune donnée disponible
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>

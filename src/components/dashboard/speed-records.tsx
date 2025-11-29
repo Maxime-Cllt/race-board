@@ -16,6 +16,24 @@ export function SpeedRecords({ data }: SpeedRecordsProps) {
     .sort((a, b) => b.speed - a.speed)
     .slice(0, 10);
 
+  // Don't render if no data available
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-yellow-500" />
+            Records de vitesse
+          </CardTitle>
+          <CardDescription>Top 10 des vitesses les plus élevées</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center h-[300px] text-muted-foreground">
+          Aucune donnée disponible
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>

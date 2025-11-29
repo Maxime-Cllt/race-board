@@ -131,6 +131,21 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
     ],
   };
 
+  // Don't render chart if no data available
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Heatmap d&apos;activité</CardTitle>
+          <CardDescription>Densité de passages par capteur et par heure</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center h-[400px] text-muted-foreground">
+          Aucune donnée disponible
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>

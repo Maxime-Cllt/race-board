@@ -44,11 +44,78 @@ racing activities.
 
 ## 🚀 Getting Started
 
-1**Build the Application in Release Mode**:
+### 1. Configure Environment
+
+The application supports **three modes**:
+
+#### 🎮 SIMULATION Mode (Default)
+Perfect for UI development and testing without any API. Generates realistic mock data:
+
+```env
+NEXT_PUBLIC_APP_MODE=SIMULATION
+```
+
+**Use case**: Frontend development, UI testing, demos without backend
+
+#### 🔧 DEV Mode
+Connects to your local development API server:
+
+```env
+NEXT_PUBLIC_APP_MODE=DEV
+NEXT_PUBLIC_API_URL=http://192.168.1.100:3000
+```
+
+**Use case**: Testing with real API during development
+
+#### 🚀 PROD Mode
+Connects to production API server:
+
+```env
+NEXT_PUBLIC_APP_MODE=PROD
+NEXT_PUBLIC_API_URL=http://your-production-server.com:3000
+```
+
+**Use case**: Production deployment with live data
+
+---
+
+### 2. Find Your Local IP Address
+
+> **Important**: If using DEV or PROD mode, `localhost` won't work on some systems. Use your local IP address instead.
+
+**Quick method** - Run the provided script:
+```bash
+./scripts/get-local-ip.sh
+```
+
+**Manual methods:**
+- **macOS**: `ifconfig | grep "inet " | grep -v 127.0.0.1`
+- **Linux**: `hostname -I`
+- **Windows**: `ipconfig` (look for IPv4 Address)
+
+Then update `.env.local`:
+```bash
+cp .env.example .env.local
+# Edit NEXT_PUBLIC_API_URL with your IP address
+```
+
+---
+
+### 3. Install Dependencies
+
+```bash
+pnpm install
+```
+
+### 4. Run the Application
 
 ```bash
 pnpm run dev
- ```
+```
+
+The application will be available at `http://localhost:3001`.
+
+> **Note**: In DEV or PROD mode, make sure your [SpeedStream](https://github.com/Maxime-Cllt/SpeedStream) backend is running. See the [ENDPOINTS.md](ENDPOINTS.md) file for API documentation.
 
 ## 🔗 See Also
 

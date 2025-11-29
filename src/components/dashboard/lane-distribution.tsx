@@ -60,6 +60,21 @@ export function LaneDistribution({ data }: LaneDistributionProps) {
     ],
   };
 
+  // Don't render chart if no data available
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Répartition par voie</CardTitle>
+          <CardDescription>Distribution des passages par voie</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center h-[300px] text-muted-foreground">
+          Aucune donnée disponible
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>

@@ -137,6 +137,21 @@ export function AverageSpeedBySensor({ data }: AverageSpeedBySensorProps) {
     ],
   };
 
+  // Don't render chart if no data available
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Vitesse moyenne par capteur</CardTitle>
+          <CardDescription>Comparaison des performances sur chaque secteur</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center h-[350px] text-muted-foreground">
+          Aucune donnée disponible
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
