@@ -9,6 +9,10 @@ import { SpeedDistribution } from "@/components/dashboard/speed-distribution";
 import { HourlyTrend } from "@/components/dashboard/hourly-trend";
 import { SpeedRecords } from "@/components/dashboard/speed-records";
 import { ActivityHeatmap } from "@/components/dashboard/activity-heatmap";
+import { LanePerformance } from "@/components/dashboard/lane-performance";
+import { SpeedConsistency } from "@/components/dashboard/speed-consistency";
+import { TopSensors } from "@/components/dashboard/top-sensors";
+import { TimePeriodAnalysis } from "@/components/dashboard/time-period-analysis";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SettingsPanel } from "@/components/settings-panel";
 import { Gauge, TrendingUp, Activity, Zap } from "lucide-react";
@@ -47,6 +51,14 @@ export default function Home() {
       return sensorMatch && laneMatch && speedMatch;
     });
   }, [realtimeData, settings]);
+
+  // Extract unique sensor names from realtime data
+  const availableSensors = useMemo(() => {
+    const sensorNames = realtimeData
+      .map((d) => d.sensor_name)
+      .filter((name): name is string => name !== null && name !== undefined);
+    return Array.from(new Set(sensorNames)).sort();
+  }, [realtimeData]);
 
   const stats = useMemo(() => {
     if (filteredData.length === 0) {
@@ -100,7 +112,7 @@ export default function Home() {
                   {config.isSimulation ? "Données simulées" : "Données en temps réel"}
                 </span>
               </div>
-              <SettingsPanel />
+              <SettingsPanel availableSensors={availableSensors} />
               <ThemeToggle />
             </div>
           </div>
@@ -161,22 +173,32 @@ export default function Home() {
           settings.showSpeedRecords ||
           settings.showSpeedDistribution ||
           settings.showAverageSpeedBySensor ||
-          settings.showActivityHeatmap) && (
+          settings.showActivityHeatmap ||
+          settings.showLanePerformance ||
+          settings.showSpeedConsistency ||
+          settings.showTopSensors ||
+          settings.showTimePeriodAnalysis) && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
               <Activity className="h-6 w-6 text-primary" />
               Analyses Avancées
             </h2>
 
-            {/* Row 1: Trend and Records */}
-            {(settings.showHourlyTrend || settings.showSpeedRecords) && (
-              <div className="grid gap-6 lg:grid-cols-2 mb-6">
-                {settings.showHourlyTrend && <HourlyTrend data={filteredData} />}
-                {settings.showSpeedRecords && <SpeedRecords data={filteredData} />}
+            {/* Row 1: Hourly Trend */}
+            {settings.showHourlyTrend && (
+              <div className="grid gap-6 mb-6">
+                <HourlyTrend data={filteredData} />
               </div>
             )}
 
-            {/* Row 2: Distribution and Average by Sensor */}
+            {/* Row 2: Speed Records Table (Full Width) */}
+            {settings.showSpeedRecords && (
+              <div className="grid gap-6 mb-6">
+                <SpeedRecords data={filteredData} />
+              </div>
+            )}
+
+            {/* Row 3: Distribution and Average by Sensor */}
             {(settings.showSpeedDistribution || settings.showAverageSpeedBySensor) && (
               <div className="grid gap-6 lg:grid-cols-2 mb-6">
                 {settings.showSpeedDistribution && <SpeedDistribution data={filteredData} />}
@@ -184,10 +206,26 @@ export default function Home() {
               </div>
             )}
 
-            {/* Row 3: Activity Heatmap */}
+            {/* Row 4: Activity Heatmap */}
             {settings.showActivityHeatmap && (
               <div className="grid gap-6 mb-6">
                 <ActivityHeatmap data={filteredData} />
+              </div>
+            )}
+
+            {/* Row 5: Lane Performance and Speed Consistency */}
+            {(settings.showLanePerformance || settings.showSpeedConsistency) && (
+              <div className="grid gap-6 lg:grid-cols-2 mb-6">
+                {settings.showLanePerformance && <LanePerformance data={filteredData} />}
+                {settings.showSpeedConsistency && <SpeedConsistency data={filteredData} />}
+              </div>
+            )}
+
+            {/* Row 6: Top Sensors and Time Period Analysis */}
+            {(settings.showTopSensors || settings.showTimePeriodAnalysis) && (
+              <div className="grid gap-6 lg:grid-cols-2 mb-6">
+                {settings.showTopSensors && <TopSensors data={filteredData} />}
+                {settings.showTimePeriodAnalysis && <TimePeriodAnalysis data={filteredData} />}
               </div>
             )}
           </div>

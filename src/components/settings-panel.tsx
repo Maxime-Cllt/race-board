@@ -19,17 +19,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useSettings } from "@/contexts/settings-context";
 import { Lane } from "@/types/speed-data";
 
-const AVAILABLE_SENSORS = [
-  "Sector 1 Entry",
-  "Sector 1 Exit",
-  "Sector 2 Entry",
-  "Sector 2 Exit",
-  "Sector 3 Entry",
-  "Sector 3 Exit",
-  "Finish Line",
-  "Pit Entry",
-];
-
 const UPDATE_INTERVALS = [
   { label: "1 seconde", value: 1000 },
   { label: "3 secondes", value: 3000 },
@@ -44,7 +33,11 @@ const MAX_DATA_POINTS_OPTIONS = [
   { label: "200 points", value: 200 },
 ];
 
-export function SettingsPanel() {
+interface SettingsPanelProps {
+  availableSensors: string[];
+}
+
+export function SettingsPanel({ availableSensors }: SettingsPanelProps) {
   const { settings, updateSettings, resetSettings } = useSettings();
   const [open, setOpen] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
@@ -244,18 +237,24 @@ export function SettingsPanel() {
               Sélectionnez les capteurs à afficher (vide = tous)
             </p>
             <div className="space-y-2">
-              {AVAILABLE_SENSORS.map((sensor) => (
-                <div key={sensor} className="flex items-center justify-between">
-                  <Label htmlFor={`sensor-${sensor}`} className="text-sm cursor-pointer">
-                    {sensor}
-                  </Label>
-                  <Switch
-                    id={`sensor-${sensor}`}
-                    checked={isSensorSelected(sensor)}
-                    onCheckedChange={() => toggleSensor(sensor)}
-                  />
-                </div>
-              ))}
+              {availableSensors.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Aucun capteur détecté. En attente de données...
+                </p>
+              ) : (
+                availableSensors.map((sensor) => (
+                  <div key={sensor} className="flex items-center justify-between">
+                    <Label htmlFor={`sensor-${sensor}`} className="text-sm cursor-pointer">
+                      {sensor}
+                    </Label>
+                    <Switch
+                      id={`sensor-${sensor}`}
+                      checked={isSensorSelected(sensor)}
+                      onCheckedChange={() => toggleSensor(sensor)}
+                    />
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -439,6 +438,54 @@ export function SettingsPanel() {
                   checked={settings.showActivityHeatmap}
                   onCheckedChange={(checked) =>
                     updateSettings({ showActivityHeatmap: checked })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show-lane-performance" className="text-sm cursor-pointer">
+                  Comparaison des corridors
+                </Label>
+                <Switch
+                  id="show-lane-performance"
+                  checked={settings.showLanePerformance}
+                  onCheckedChange={(checked) =>
+                    updateSettings({ showLanePerformance: checked })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show-speed-consistency" className="text-sm cursor-pointer">
+                  Consistance des vitesses
+                </Label>
+                <Switch
+                  id="show-speed-consistency"
+                  checked={settings.showSpeedConsistency}
+                  onCheckedChange={(checked) =>
+                    updateSettings({ showSpeedConsistency: checked })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show-top-sensors" className="text-sm cursor-pointer">
+                  Top capteurs actifs
+                </Label>
+                <Switch
+                  id="show-top-sensors"
+                  checked={settings.showTopSensors}
+                  onCheckedChange={(checked) =>
+                    updateSettings({ showTopSensors: checked })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show-time-period" className="text-sm cursor-pointer">
+                  Analyse par période
+                </Label>
+                <Switch
+                  id="show-time-period"
+                  checked={settings.showTimePeriodAnalysis}
+                  onCheckedChange={(checked) =>
+                    updateSettings({ showTimePeriodAnalysis: checked })
                   }
                 />
               </div>

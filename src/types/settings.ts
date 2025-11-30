@@ -20,6 +20,10 @@ export interface AppSettings {
   showSpeedDistribution: boolean;
   showAverageSpeedBySensor: boolean;
   showActivityHeatmap: boolean;
+  showLanePerformance: boolean;
+  showSpeedConsistency: boolean;
+  showTopSensors: boolean;
+  showTimePeriodAnalysis: boolean;
 
   // Seuils d'alerte
   speedThresholdMin: number;
@@ -40,6 +44,10 @@ export const defaultSettings: AppSettings = {
   showSpeedDistribution: true,
   showAverageSpeedBySensor: true,
   showActivityHeatmap: true,
+  showLanePerformance: true,
+  showSpeedConsistency: true,
+  showTopSensors: true,
+  showTimePeriodAnalysis: true,
   speedThresholdMin: 80,
   speedThresholdMax: 350,
   enableAlerts: false,

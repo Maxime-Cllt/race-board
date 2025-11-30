@@ -4,7 +4,11 @@ import { mockSpeedData } from "@/lib/mock-data";
 import { speedAPI } from "@/services/speed-api";
 import { config } from "@/config/env";
 
-const sensors = [
+/**
+ * Mock sensor names for SIMULATION mode only.
+ * In DEV/PROD modes, real sensor names come from the API.
+ */
+const MOCK_SENSORS = [
   "Sector 1 Entry",
   "Sector 1 Exit",
   "Sector 2 Entry",
@@ -22,7 +26,7 @@ function generateRealtimeData(id: number): SpeedData {
 
   return {
     id,
-    sensor_name: sensors[Math.floor(Math.random() * sensors.length)],
+    sensor_name: MOCK_SENSORS[Math.floor(Math.random() * MOCK_SENSORS.length)],
     speed: Math.round(speed * 10) / 10,
     lane: Math.random() > 0.5 ? Lane.Left : Lane.Right,
     created_at: new Date().toISOString(),
