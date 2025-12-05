@@ -56,7 +56,7 @@ export function SpeedRecords({data}: SpeedRecordsProps) {
 
     // Column widths state
     const [columnWidths, setColumnWidths] = useState<ColumnWidths>({
-        id: 80,
+        id: 40,
         sensor_name: 200,
         speed: 120,
         lane: 100,
