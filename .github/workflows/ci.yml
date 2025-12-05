@@ -4,11 +4,9 @@ on:
   push:
     branches:
       - main
-      - develop
   pull_request:
     branches:
       - main
-      - develop
 
 jobs:
   test:
@@ -39,28 +37,6 @@ jobs:
 
       - name: Run tests
         run: pnpm test
-
-      - name: Generate coverage report
-        run: pnpm run test:coverage
-
-      - name: Upload coverage to Codecov (optional)
-        uses: codecov/codecov-action@v4
-        if: success()
-        with:
-          files: ./coverage/coverage-final.json
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
-        continue-on-error: true
-
-      - name: Archive test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: |
-            coverage/
-          retention-days: 30
 
   lint:
     name: Run Linter
