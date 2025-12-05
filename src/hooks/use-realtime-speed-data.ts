@@ -97,7 +97,7 @@ export function useRealtimeSpeedData(intervalMs: number = 3000, maxDataPoints: n
         }
       };
 
-      fetchInitialData();
+      fetchInitialData().then(() => undefined);
 
       // Connect to SSE stream for real-time updates
       console.log(`   Establishing SSE connection to ${config.apiBaseUrl}/api/speeds/stream`);
@@ -135,5 +135,9 @@ export function useRealtimeSpeedData(intervalMs: number = 3000, maxDataPoints: n
     }
   }, [intervalMs, maxDataPoints, lastId]);
 
-  return data;
+  return {
+    data,
+    isConnected,
+    connectionMode: config.isSimulation ? 'simulation' : 'sse',
+  };
 }

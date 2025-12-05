@@ -26,7 +26,7 @@ export default function Home() {
   const { settings } = useSettings();
 
   // Use realtime data with settings
-  const realtimeData = useRealtimeSpeedData(
+  const { data: realtimeData, isConnected, connectionMode } = useRealtimeSpeedData(
     settings.updateInterval,
     settings.maxDataPoints
   );
@@ -107,9 +107,13 @@ export default function Home() {
                     {config.apiBaseUrl}
                   </span>
                 )}
-                <div className="h-2 w-2 rounded-full bg-chart-4 animate-pulse"></div>
+                <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-yellow-500'} ${isConnected ? 'animate-pulse' : ''}`}></div>
                 <span className="text-sm text-muted-foreground">
-                  {config.isSimulation ? "Données simulées" : "Données en temps réel"}
+                  {config.isSimulation
+                    ? "Données simulées"
+                    : isConnected
+                      ? "SSE connecté"
+                      : "SSE en connexion..."}
                 </span>
               </div>
               <SettingsPanel availableSensors={availableSensors} />
@@ -158,7 +162,11 @@ export default function Home() {
               <SpeedChart
                 data={filteredData}
                 title="Évolution des vitesses"
-                description={`Vitesses enregistrées (mise à jour toutes les ${settings.updateInterval / 1000}s)`}
+                description={
+                  connectionMode === 'sse'
+                    ? `Vitesses enregistrées (connexion temps réel via SSE ${isConnected ? '✓' : '⚠️'})`
+                    : `Vitesses enregistrées (simulation - mise à jour toutes les ${settings.updateInterval / 1000}s)`
+                }
               />
             </div>
           )}
