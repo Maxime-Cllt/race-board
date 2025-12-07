@@ -1,0 +1,19 @@
+services:
+  race-board:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Build-time variables for Next.js public environment variables
+        NEXT_PUBLIC_APP_MODE: ${NEXT_PUBLIC_APP_MODE:-DEV}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://192.168.1.75:8080}
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+    restart: unless-stopped
+    # Optionally, use a specific env file
+    env_file:
+      - .env.local
