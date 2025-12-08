@@ -16,7 +16,7 @@ import { TimePeriodAnalysis } from "@/components/dashboard/time-period-analysis"
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SettingsPanel } from "@/components/settings-panel";
 import { Gauge, TrendingUp, Activity, Zap } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useEffect, useState, useRef } from "react";
 import { useRealtimeSpeedData } from "@/hooks/use-realtime-speed-data";
 import { useSettings } from "@/contexts/settings-context";
 import { config } from "@/config/env";
@@ -28,7 +28,10 @@ export default function Home() {
   // Use realtime data with settings
   const { data: realtimeData, isConnected, connectionMode } = useRealtimeSpeedData(
     settings.updateInterval,
-    settings.maxDataPoints
+    settings.maxDataPoints,
+    settings.dateRangeMode,
+    settings.customStartDate,
+    settings.customEndDate
   );
 
   // Filter data based on settings
@@ -83,6 +86,21 @@ export default function Home() {
       totalReadings,
     };
   }, [filteredData]);
+
+  // Track new speed records
+  const [hasNewRecord, setHasNewRecord] = useState(false);
+  const previousMaxSpeed = useRef(0);
+
+  useEffect(() => {
+    // Check if we have a new record (and it's not the initial load)
+    if (stats.maxSpeed > previousMaxSpeed.current && previousMaxSpeed.current > 0) {
+      setHasNewRecord(true);
+      // Reset animation after 3 seconds
+      const timer = setTimeout(() => setHasNewRecord(false), 3000);
+      return () => clearTimeout(timer);
+    }
+    previousMaxSpeed.current = stats.maxSpeed;
+  }, [stats.maxSpeed]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -139,6 +157,7 @@ export default function Home() {
             value={`${stats.maxSpeed} km/h`}
             subtitle="Record de la session"
             icon={TrendingUp}
+            isNewRecord={hasNewRecord}
           />
           <StatCard
             title="Vitesse Minimale"

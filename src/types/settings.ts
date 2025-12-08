@@ -1,9 +1,16 @@
 import { Lane } from "./speed-data";
 
+export type DateRangeMode = "realtime" | "today" | "custom";
+
 export interface AppSettings {
   // Filtres de données
   selectedSensors: string[];
   selectedLanes: Lane[];
+
+  // Filtre de plage de dates
+  dateRangeMode: DateRangeMode;
+  customStartDate: string | null; // ISO string
+  customEndDate: string | null; // ISO string
 
   // Intervalle de mise à jour
   updateInterval: number; // en ms
@@ -34,6 +41,9 @@ export interface AppSettings {
 export const defaultSettings: AppSettings = {
   selectedSensors: [],
   selectedLanes: [Lane.Left, Lane.Right],
+  dateRangeMode: "realtime",
+  customStartDate: null,
+  customEndDate: null,
   updateInterval: 3000,
   maxDataPoints: 120,
   showLaneDistribution: true,

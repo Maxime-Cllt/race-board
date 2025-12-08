@@ -3,6 +3,7 @@ import { SpeedData, Lane } from "@/types/speed-data";
 import { mockSpeedData } from "@/lib/mock-data";
 import { speedAPI } from "@/services/speed-api";
 import { config } from "@/config/env";
+import { DateRangeMode } from "@/types/settings";
 
 /**
  * Mock sensor names for SIMULATION mode only.
@@ -39,7 +40,13 @@ function generateRealtimeData(id: number): SpeedData {
  * - In DEV mode: Connects to development API via SSE for real-time updates
  * - In PROD mode: Connects to production API via SSE for real-time updates
  */
-export function useRealtimeSpeedData(intervalMs: number = 3000, maxDataPoints: number = 120) {
+export function useRealtimeSpeedData(
+  intervalMs: number = 3000,
+  maxDataPoints: number = 120,
+  dateRangeMode: DateRangeMode = "realtime",
+  customStartDate: string | null = null,
+  customEndDate: string | null = null
+) {
   const [data, setData] = useState<SpeedData[]>([]);
   const [lastId, setLastId] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
@@ -74,66 +81,84 @@ export function useRealtimeSpeedData(intervalMs: number = 3000, maxDataPoints: n
       return () => clearInterval(interval);
     }
 
-    // Development or Production mode: Connect to real API via SSE
+    // Development or Production mode: Connect to real API
     if (config.requiresAPI) {
       const mode = config.isDevelopment ? "DEV" : "PROD";
       const emoji = config.isDevelopment ? "🔧" : "🚀";
 
       console.log(`${emoji} ${mode} MODE: Connecting to API at ${config.apiBaseUrl}`);
 
-      // Fetch initial data from API
+      // Fetch initial data from API based on date range mode
       const fetchInitialData = async () => {
         try {
-          console.log(`   Fetching initial data (limit: ${maxDataPoints})...`);
-          const initialData = await speedAPI.getSpeeds(maxDataPoints);
+          let initialData: SpeedData[] = [];
+
+          if (dateRangeMode === "custom" && customStartDate && customEndDate) {
+            console.log(`   📅 Fetching custom date range: ${customStartDate} to ${customEndDate}`);
+            initialData = await speedAPI.getSpeedsByRange(customStartDate, customEndDate);
+            console.log(`   ✅ Loaded ${initialData.length} speed records from custom date range`);
+          } else if (dateRangeMode === "today") {
+            console.log(`   📅 Fetching today's data...`);
+            initialData = await speedAPI.getTodaySpeeds();
+            console.log(`   ✅ Loaded ${initialData.length} speed records from today`);
+          } else {
+            // realtime mode
+            console.log(`   Fetching initial data (limit: ${maxDataPoints})...`);
+            initialData = await speedAPI.getSpeeds(maxDataPoints);
+            console.log(`   ✅ Loaded ${initialData.length} initial speed records from API`);
+          }
+
           if (initialData.length > 0) {
             setData(initialData);
-            console.log(`   ✅ Loaded ${initialData.length} initial speed records from API`);
           } else {
-            console.warn(`   ⚠️  No initial data available from API`);
+            console.warn(`   ⚠️  No data available from API`);
           }
+          setIsConnected(true);
         } catch (error) {
           console.error(`   ❌ Error fetching initial data:`, error);
+          setIsConnected(false);
         }
       };
 
       fetchInitialData().then(() => undefined);
 
-      // Connect to SSE stream for real-time updates
-      console.log(`   Establishing SSE connection to ${config.apiBaseUrl}/api/speeds/stream`);
-      const eventSource = speedAPI.connectToSpeedStream(
-        (newSpeedData) => {
-          console.log("   📡 Received speed data:", newSpeedData);
+      // Only connect to SSE stream in realtime mode
+      if (dateRangeMode === "realtime") {
+        console.log(`   Establishing SSE connection to ${config.apiBaseUrl}/api/speeds/stream`);
+        const eventSource = speedAPI.connectToSpeedStream(
+          (newSpeedData) => {
+            console.log("   📡 Received speed data:", newSpeedData);
+            setIsConnected(true);
+
+            setData((prevData) => {
+              const newData = [...prevData, newSpeedData];
+              // Keep only the last maxDataPoints
+              if (newData.length > maxDataPoints) {
+                return newData.slice(-maxDataPoints);
+              }
+              return newData;
+            });
+          },
+          (error) => {
+            console.error("   ❌ SSE connection error:", error);
+            setIsConnected(false);
+          }
+        );
+
+        eventSource.onopen = () => {
+          console.log("   ✅ SSE connection established successfully");
           setIsConnected(true);
+        };
 
-          setData((prevData) => {
-            const newData = [...prevData, newSpeedData];
-            // Keep only the last maxDataPoints
-            if (newData.length > maxDataPoints) {
-              return newData.slice(-maxDataPoints);
-            }
-            return newData;
-          });
-        },
-        (error) => {
-          console.error("   ❌ SSE connection error:", error);
+        // Cleanup: Close SSE connection on unmount
+        return () => {
+          console.log(`   🔌 Closing SSE connection`);
+          eventSource.close();
           setIsConnected(false);
-        }
-      );
-
-      eventSource.onopen = () => {
-        console.log("   ✅ SSE connection established successfully");
-        setIsConnected(true);
-      };
-
-      // Cleanup: Close SSE connection on unmount
-      return () => {
-        console.log(`   🔌 Closing SSE connection`);
-        eventSource.close();
-        setIsConnected(false);
-      };
+        };
+      }
     }
-  }, [intervalMs, maxDataPoints, lastId]);
+  }, [intervalMs, maxDataPoints, lastId, dateRangeMode, customStartDate, customEndDate]);
 
   return {
     data,

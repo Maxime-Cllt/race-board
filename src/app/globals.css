@@ -120,3 +120,38 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom animations for new speed record */
+@keyframes new-record {
+  0% {
+    transform: scale(1);
+  }
+  10% {
+    transform: scale(1.05);
+  }
+  20% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.05);
+  }
+  40% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-new-record {
+  animation: new-record 1s ease-in-out;
+}
+
+/* Delayed animation utilities */
+.animation-delay-150 {
+  animation-delay: 150ms;
+}
+
+.animation-delay-300 {
+  animation-delay: 300ms;
+}

@@ -87,6 +87,30 @@ export class SpeedStreamAPI {
   }
 
   /**
+   * Fetch speed measurements within a date range
+   * GET /api/speeds/range?start_date={start}&end_date={end}
+   * @param startDate Start date in ISO format (e.g., "2024-01-08 08:30:00" or "2024-01-08T08:30:00")
+   * @param endDate End date in ISO format (e.g., "2024-01-14 18:45:00" or "2024-01-14T18:45:00")
+   */
+  async getSpeedsByRange(startDate: string, endDate: string): Promise<SpeedData[]> {
+    try {
+      const params = new URLSearchParams({
+        start_date: startDate,
+        end_date: endDate,
+      });
+      const response = await fetch(`${this.baseUrl}/api/speeds/range?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch speeds by range: ${response.statusText}`);
+      }
+      const apiData: SpeedDataAPI[] = await response.json();
+      return apiData.map(apiToSpeedData);
+    } catch (error) {
+      console.error('Error fetching speeds by range:', error);
+      return [];
+    }
+  }
+
+  /**
    * Create a new speed measurement
    * POST /api/speeds
    */

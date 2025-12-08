@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Settings, X, RotateCcw, QrCode, Download, RefreshCw } from "lucide-react";
+import { Settings, X, RotateCcw, QrCode, Download, RefreshCw, Calendar } from "lucide-react";
 import QRCodeLib from "qrcode";
 import { getShareableURL, getLocalIP, replaceLocalhostWithIP } from "@/lib/get-local-ip";
 import {
@@ -18,6 +18,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSettings } from "@/contexts/settings-context";
 import { Lane } from "@/types/speed-data";
+import { DateRangeMode } from "@/types/settings";
+import { format } from "date-fns";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 
 const UPDATE_INTERVALS = [
   { label: "1 seconde", value: 1000 },
@@ -217,6 +220,78 @@ export function SettingsPanel({ availableSensors }: SettingsPanelProps) {
                 <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             )}
+          </div>
+
+          {/* Filtre de plage de dates */}
+          <div className="space-y-4 border-t pt-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              <h3 className="text-sm font-semibold">Période de données</h3>
+            </div>
+            <div className="space-y-3">
+              <Select
+                value={settings.dateRangeMode}
+                onValueChange={(value: DateRangeMode) =>
+                  updateSettings({ dateRangeMode: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="realtime">Temps réel</SelectItem>
+                  <SelectItem value="today">Aujourd&apos;hui</SelectItem>
+                  <SelectItem value="custom">Période personnalisée</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {settings.dateRangeMode === "custom" && (
+                <div className="space-y-3 pl-4 border-l-2">
+                  <DateTimePicker
+                    label="Date de début"
+                    placeholder="Sélectionner la date de début"
+                    date={settings.customStartDate ? new Date(settings.customStartDate) : undefined}
+                    onDateChange={(date) => {
+                      updateSettings({ customStartDate: date?.toISOString() || null });
+                    }}
+                  />
+                  <DateTimePicker
+                    label="Date de fin"
+                    placeholder="Sélectionner la date de fin"
+                    date={settings.customEndDate ? new Date(settings.customEndDate) : undefined}
+                    onDateChange={(date) => {
+                      updateSettings({ customEndDate: date?.toISOString() || null });
+                    }}
+                  />
+                  {settings.customStartDate && settings.customEndDate && (
+                    <div className="p-3 bg-primary/5 rounded-md">
+                      <p className="text-xs text-muted-foreground">
+                        📊 Les données seront chargées du{" "}
+                        <span className="font-medium text-foreground">
+                          {format(new Date(settings.customStartDate), "dd/MM/yyyy HH:mm")}
+                        </span>{" "}
+                        au{" "}
+                        <span className="font-medium text-foreground">
+                          {format(new Date(settings.customEndDate), "dd/MM/yyyy HH:mm")}
+                        </span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {settings.dateRangeMode === "realtime" && (
+                <p className="text-xs text-muted-foreground">
+                  Les dernières données en temps réel sont affichées
+                </p>
+              )}
+
+              {settings.dateRangeMode === "today" && (
+                <p className="text-xs text-muted-foreground">
+                  Toutes les données d&apos;aujourd&apos;hui sont affichées
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Filtres de capteurs */}
