@@ -3,11 +3,11 @@
 # Exit on any error
 set -e
 
-source ../.env
+source ../.env.local
 
 
-# Read cargo.toml to get the version
-VERSION=$(grep '^version =' ../Cargo.toml | head -1 | awk -F'"' '{print $2}')
+# Read package.json to get the version
+VERSION=$(node -p "require('../package.json').version")
 
 echo "Preparing to push Docker image..."
 echo "Image Name: $IMAGE_NAME"
