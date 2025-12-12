@@ -1,5 +1,7 @@
 import { SpeedData, SpeedDataAPI, apiToSpeedData } from '@/types/speed-data';
 import { config } from '@/config/env';
+import { logger } from '@/lib/logger';
+import { validateSpeedDataAPI, validateSpeedDataAPIArray, validateHealthCheck } from '@/lib/validation';
 
 /**
  * SpeedStream API Service
@@ -7,9 +9,29 @@ import { config } from '@/config/env';
  */
 export class SpeedStreamAPI {
   private baseUrl: string;
+  private apiKey: string;
 
-  constructor(baseUrl: string = config.apiBaseUrl) {
+  constructor(baseUrl: string = config.apiBaseUrl, apiKey: string = config.apiKey) {
     this.baseUrl = baseUrl;
+    this.apiKey = apiKey;
+  }
+
+  /**
+   * Get headers for API requests, including authentication if API key is set
+   */
+  private getHeaders(includeContentType: boolean = true): HeadersInit {
+    const headers: HeadersInit = {};
+
+    if (includeContentType) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    // Add API key to headers if configured
+    if (this.apiKey) {
+      headers['X-API-Key'] = this.apiKey;
+    }
+
+    return headers;
   }
 
   /**
@@ -18,14 +40,17 @@ export class SpeedStreamAPI {
    */
   async getLatestSpeed(): Promise<SpeedData | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/speeds/latest`);
+      const response = await fetch(`${this.baseUrl}/api/speeds/latest`, {
+        headers: this.getHeaders(false),
+      });
       if (!response.ok) {
         throw new Error(`Failed to fetch latest speed: ${response.statusText}`);
       }
-      const apiData: SpeedDataAPI = await response.json();
+      const rawData = await response.json();
+      const apiData = validateSpeedDataAPI(rawData); // Validate response
       return apiToSpeedData(apiData);
     } catch (error) {
-      console.error('Error fetching latest speed:', error);
+      logger.error('Error fetching latest speed:', error);
       return null;
     }
   }
@@ -36,14 +61,17 @@ export class SpeedStreamAPI {
    */
   async getSpeeds(limit: number = 100): Promise<SpeedData[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/speeds?limit=${limit}`);
+      const response = await fetch(`${this.baseUrl}/api/speeds?limit=${limit}`, {
+        headers: this.getHeaders(false),
+      });
       if (!response.ok) {
         throw new Error(`Failed to fetch speeds: ${response.statusText}`);
       }
-      const apiData: SpeedDataAPI[] = await response.json();
+      const rawData = await response.json();
+      const apiData = validateSpeedDataAPIArray(rawData); // Validate response
       return apiData.map(apiToSpeedData);
     } catch (error) {
-      console.error('Error fetching speeds:', error);
+      logger.error('Error fetching speeds:', error);
       return [];
     }
   }
@@ -54,14 +82,17 @@ export class SpeedStreamAPI {
    */
   async getTodaySpeeds(limit: number = 1000): Promise<SpeedData[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/speeds/today?limit=${limit}`);
+      const response = await fetch(`${this.baseUrl}/api/speeds/today?limit=${limit}`, {
+        headers: this.getHeaders(false),
+      });
       if (!response.ok) {
         throw new Error(`Failed to fetch today's speeds: ${response.statusText}`);
       }
-      const apiData: SpeedDataAPI[] = await response.json();
+      const rawData = await response.json();
+      const apiData = validateSpeedDataAPIArray(rawData); // Validate response
       return apiData.map(apiToSpeedData);
     } catch (error) {
-      console.error("Error fetching today's speeds:", error);
+      logger.error("Error fetching today's speeds:", error);
       return [];
     }
   }
@@ -73,15 +104,17 @@ export class SpeedStreamAPI {
   async getPaginatedSpeeds(offset: number = 0, limit: number = 100): Promise<SpeedData[]> {
     try {
       const response = await fetch(
-        `${this.baseUrl}/api/speeds/paginated?offset=${offset}&limit=${limit}`
+        `${this.baseUrl}/api/speeds/paginated?offset=${offset}&limit=${limit}`,
+        { headers: this.getHeaders(false) }
       );
       if (!response.ok) {
         throw new Error(`Failed to fetch paginated speeds: ${response.statusText}`);
       }
-      const apiData: SpeedDataAPI[] = await response.json();
+      const rawData = await response.json();
+      const apiData = validateSpeedDataAPIArray(rawData); // Validate response
       return apiData.map(apiToSpeedData);
     } catch (error) {
-      console.error('Error fetching paginated speeds:', error);
+      logger.error('Error fetching paginated speeds:', error);
       return [];
     }
   }
@@ -98,14 +131,17 @@ export class SpeedStreamAPI {
         start_date: startDate,
         end_date: endDate,
       });
-      const response = await fetch(`${this.baseUrl}/api/speeds/range?${params.toString()}`);
+      const response = await fetch(`${this.baseUrl}/api/speeds/range?${params.toString()}`, {
+        headers: this.getHeaders(false),
+      });
       if (!response.ok) {
         throw new Error(`Failed to fetch speeds by range: ${response.statusText}`);
       }
-      const apiData: SpeedDataAPI[] = await response.json();
+      const rawData = await response.json();
+      const apiData = validateSpeedDataAPIArray(rawData); // Validate response
       return apiData.map(apiToSpeedData);
     } catch (error) {
-      console.error('Error fetching speeds by range:', error);
+      logger.error('Error fetching speeds by range:', error);
       return [];
     }
   }
@@ -122,14 +158,12 @@ export class SpeedStreamAPI {
     try {
       const response = await fetch(`${this.baseUrl}/api/speeds`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getHeaders(),
         body: JSON.stringify(data),
       });
       return response.status === 201;
     } catch (error) {
-      console.error('Error creating speed measurement:', error);
+      logger.error('Error creating speed measurement:', error);
       return false;
     }
   }
@@ -149,16 +183,17 @@ export class SpeedStreamAPI {
 
     eventSource.onmessage = (event) => {
       try {
-        const apiData: SpeedDataAPI = JSON.parse(event.data);
+        const rawData = JSON.parse(event.data);
+        const apiData = validateSpeedDataAPI(rawData); // Validate SSE data
         const speedData = apiToSpeedData(apiData);
         onMessage(speedData);
       } catch (error) {
-        console.error('Error parsing SSE data:', error);
+        logger.error('Error parsing SSE data:', error);
       }
     };
 
     eventSource.onerror = (error) => {
-      console.error('SSE connection error:', error);
+      logger.error('SSE connection error:', error);
       if (onError) {
         onError(error);
       }
@@ -171,15 +206,18 @@ export class SpeedStreamAPI {
    * Check API health status
    * GET /health
    */
-  async checkHealth(): Promise<{ status: string; message: string } | null> {
+  async checkHealth(): Promise<{ status: string; message?: string } | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/health`);
+      const response = await fetch(`${this.baseUrl}/health`, {
+        headers: this.getHeaders(false),
+      });
       if (!response.ok) {
         throw new Error(`Health check failed: ${response.statusText}`);
       }
-      return await response.json();
+      const rawData = await response.json();
+      return validateHealthCheck(rawData); // Validate health check response
     } catch (error) {
-      console.error('Error checking API health:', error);
+      logger.error('Error checking API health:', error);
       return null;
     }
   }

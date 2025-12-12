@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Settings, X, RotateCcw, QrCode, Download, RefreshCw, Calendar } from "lucide-react";
 import QRCodeLib from "qrcode";
 import { getShareableURL, getLocalIP, replaceLocalhostWithIP } from "@/lib/get-local-ip";
+import { logger } from "@/lib/logger";
 import {
   Sheet,
   SheetContent,
@@ -62,7 +63,7 @@ export function SettingsPanel({ availableSensors }: SettingsPanelProps) {
       });
       setQrCodeUrl(dataUrl);
     } catch (err) {
-      console.error("Error generating QR code:", err);
+      logger.error("Error generating QR code:", err);
     }
   };
 

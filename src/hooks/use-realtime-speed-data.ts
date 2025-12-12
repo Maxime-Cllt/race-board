@@ -4,6 +4,7 @@ import { mockSpeedData } from "@/lib/mock-data";
 import { speedAPI } from "@/services/speed-api";
 import { config } from "@/config/env";
 import { DateRangeMode } from "@/types/settings";
+import { logger } from "@/lib/logger";
 
 /**
  * Mock sensor names for SIMULATION mode only.
@@ -54,8 +55,8 @@ export function useRealtimeSpeedData(
   useEffect(() => {
     // Simulation mode: Use mock data with simulated real-time updates
     if (config.isSimulation) {
-      console.log("🎮 SIMULATION MODE: Using mock data (no API connection)");
-      console.log(`   Generating data every ${intervalMs / 1000}s`);
+      logger.log("🎮 SIMULATION MODE: Using mock data (no API connection)");
+      logger.log(`   Generating data every ${intervalMs / 1000}s`);
 
       // Initialize with mock data
       setData(mockSpeedData);
@@ -86,7 +87,7 @@ export function useRealtimeSpeedData(
       const mode = config.isDevelopment ? "DEV" : "PROD";
       const emoji = config.isDevelopment ? "🔧" : "🚀";
 
-      console.log(`${emoji} ${mode} MODE: Connecting to API at ${config.apiBaseUrl}`);
+      logger.log(`${emoji} ${mode} MODE: Connecting to API at ${config.apiBaseUrl}`);
 
       // Fetch initial data from API based on date range mode
       const fetchInitialData = async () => {
@@ -94,28 +95,28 @@ export function useRealtimeSpeedData(
           let initialData: SpeedData[] = [];
 
           if (dateRangeMode === "custom" && customStartDate && customEndDate) {
-            console.log(`   📅 Fetching custom date range: ${customStartDate} to ${customEndDate}`);
+            logger.log(`   📅 Fetching custom date range: ${customStartDate} to ${customEndDate}`);
             initialData = await speedAPI.getSpeedsByRange(customStartDate, customEndDate);
-            console.log(`   ✅ Loaded ${initialData.length} speed records from custom date range`);
+            logger.log(`   ✅ Loaded ${initialData.length} speed records from custom date range`);
           } else if (dateRangeMode === "today") {
-            console.log(`   📅 Fetching today's data...`);
+            logger.log(`   📅 Fetching today's data...`);
             initialData = await speedAPI.getTodaySpeeds();
-            console.log(`   ✅ Loaded ${initialData.length} speed records from today`);
+            logger.log(`   ✅ Loaded ${initialData.length} speed records from today`);
           } else {
             // realtime mode
-            console.log(`   Fetching initial data (limit: ${maxDataPoints})...`);
+            logger.log(`   Fetching initial data (limit: ${maxDataPoints})...`);
             initialData = await speedAPI.getSpeeds(maxDataPoints);
-            console.log(`   ✅ Loaded ${initialData.length} initial speed records from API`);
+            logger.log(`   ✅ Loaded ${initialData.length} initial speed records from API`);
           }
 
           if (initialData.length > 0) {
             setData(initialData);
           } else {
-            console.warn(`   ⚠️  No data available from API`);
+            logger.warn(`   ⚠️  No data available from API`);
           }
           setIsConnected(true);
         } catch (error) {
-          console.error(`   ❌ Error fetching initial data:`, error);
+          logger.error(`   ❌ Error fetching initial data:`, error);
           setIsConnected(false);
         }
       };
@@ -124,10 +125,10 @@ export function useRealtimeSpeedData(
 
       // Only connect to SSE stream in realtime mode
       if (dateRangeMode === "realtime") {
-        console.log(`   Establishing SSE connection to ${config.apiBaseUrl}/api/speeds/stream`);
+        logger.log(`   Establishing SSE connection to ${config.apiBaseUrl}/api/speeds/stream`);
         const eventSource = speedAPI.connectToSpeedStream(
           (newSpeedData) => {
-            console.log("   📡 Received speed data:", newSpeedData);
+            logger.log("   📡 Received speed data:", newSpeedData);
             setIsConnected(true);
 
             setData((prevData) => {
@@ -140,19 +141,19 @@ export function useRealtimeSpeedData(
             });
           },
           (error) => {
-            console.error("   ❌ SSE connection error:", error);
+            logger.error("   ❌ SSE connection error:", error);
             setIsConnected(false);
           }
         );
 
         eventSource.onopen = () => {
-          console.log("   ✅ SSE connection established successfully");
+          logger.log("   ✅ SSE connection established successfully");
           setIsConnected(true);
         };
 
         // Cleanup: Close SSE connection on unmount
         return () => {
-          console.log(`   🔌 Closing SSE connection`);
+          logger.log(`   🔌 Closing SSE connection`);
           eventSource.close();
           setIsConnected(false);
         };

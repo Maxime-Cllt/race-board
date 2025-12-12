@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { AppSettings, defaultSettings } from "@/types/settings";
+import { logger } from "@/lib/logger";
 
 interface SettingsContextType {
   settings: AppSettings;
@@ -25,7 +26,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         const parsedSettings = JSON.parse(stored);
         setSettings({ ...defaultSettings, ...parsedSettings });
       } catch (error) {
-        console.error("Erreur lors du chargement des réglages:", error);
+        logger.error("Erreur lors du chargement des réglages:", error);
       }
     }
     setIsInitialized(true);
