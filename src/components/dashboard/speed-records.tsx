@@ -16,6 +16,13 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 interface SpeedRecordsProps {
     data: SpeedData[];
@@ -52,7 +59,7 @@ export function SpeedRecords({data}: SpeedRecordsProps) {
         created_at: "",
     });
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 20;
+    const [itemsPerPage, setItemsPerPage] = useState(20);
 
     // Column widths state
     const [columnWidths, setColumnWidths] = useState<ColumnWidths>({
@@ -441,11 +448,33 @@ export function SpeedRecords({data}: SpeedRecordsProps) {
                 </div>
 
                 {/* Pagination */}
-                {totalPages > 1 && (
-                    <div className="flex items-center justify-between mt-4">
-                        <div className="text-sm text-muted-foreground">
-                            Page {currentPage} sur {totalPages}
+                <div className="flex items-center justify-between mt-4">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">Lignes par page:</span>
+                            <Select
+                                value={itemsPerPage.toString()}
+                                onValueChange={(value) => {
+                                    setItemsPerPage(Number(value));
+                                    setCurrentPage(1); // Reset to first page when changing items per page
+                                }}
+                            >
+                                <SelectTrigger size="sm" className="w-[70px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="10">10</SelectItem>
+                                    <SelectItem value="20">20</SelectItem>
+                                    <SelectItem value="50">50</SelectItem>
+                                    <SelectItem value="100">100</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
+                        <div className="text-sm text-muted-foreground">
+                            {totalPages > 0 ? `Page ${currentPage} sur ${totalPages}` : 'Aucune page'}
+                        </div>
+                    </div>
+                    {totalPages > 1 && (
                         <div className="flex gap-2">
                             <Button
                                 variant="outline"
@@ -464,8 +493,8 @@ export function SpeedRecords({data}: SpeedRecordsProps) {
                                 Suivant
                             </Button>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </CardContent>
         </Card>
     );

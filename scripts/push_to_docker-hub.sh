@@ -3,6 +3,7 @@
 # Exit on any error
 set -e
 
+# Load environment variables from .env.local
 source ../.env.local
 
 
