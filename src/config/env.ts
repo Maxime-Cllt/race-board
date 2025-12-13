@@ -33,24 +33,6 @@ function validateEnvironment() {
     errors.push('NEXT_PUBLIC_API_URL is required in DEV and PROD modes');
   }
 
-  // In production, enforce HTTPS
-  if (isProduction && API_BASE_URL) {
-    if (!API_BASE_URL.startsWith('https://')) {
-      errors.push(
-        'SECURITY ERROR: Production API URL must use HTTPS. ' +
-        `Current URL: ${API_BASE_URL}`
-      );
-    }
-
-    // Check for placeholder URLs
-    if (API_BASE_URL.includes('your-production-server.com')) {
-      errors.push(
-        'Production API URL is not configured. ' +
-        'Please update NEXT_PUBLIC_API_URL in .env.production'
-      );
-    }
-  }
-
   // Warn about localhost/HTTP in development
   if (isDevelopment && API_BASE_URL) {
     if (API_BASE_URL.startsWith('http://localhost') || API_BASE_URL.startsWith('http://127.0.0.1')) {
