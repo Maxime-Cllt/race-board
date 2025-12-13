@@ -45,13 +45,6 @@ services:
     security_opt:
       - no-new-privileges:true
 
-    # Read-only root filesystem (except for necessary writable paths)
-    # Uncomment if your app doesn't need to write to the filesystem
-    # read_only: true
-    # tmpfs:
-    #   - /tmp
-    #   - /app/.next/cache
-
     # Logging configuration to prevent disk space exhaustion
     logging:
       driver: "json-file"
