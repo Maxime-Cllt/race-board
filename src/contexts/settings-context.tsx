@@ -40,7 +40,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [settings, isInitialized]);
 
   const updateSettings = (newSettings: Partial<AppSettings>) => {
-    setSettings((prev) => ({ ...prev, ...newSettings }));
+    logger.log("⚙️ Updating settings:", newSettings);
+    setSettings((prev) => {
+      const updated = { ...prev, ...newSettings };
+      logger.log("📝 New settings state:", updated);
+      return updated;
+    });
   };
 
   const resetSettings = () => {

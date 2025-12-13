@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { SpeedData, Lane } from "@/types/speed-data";
 import { mockSpeedData } from "@/lib/mock-data";
 import { speedAPI } from "@/services/speed-api";
@@ -51,35 +51,141 @@ export function useRealtimeSpeedData(
   const [data, setData] = useState<SpeedData[]>([]);
   const [lastId, setLastId] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Refs to track cleanup functions
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Debug: Track data changes
+  useEffect(() => {
+    logger.log(`📈 Data state changed: ${data.length} records`);
+  }, [data]);
 
   useEffect(() => {
+    logger.log("🔄 useEffect triggered with settings:", {
+      dateRangeMode,
+      customStartDate,
+      customEndDate,
+      intervalMs,
+      maxDataPoints
+    });
+
+    // Flag to track if this effect run should be cancelled
+    let isCancelled = false;
+
+    // Close any existing connections from previous effect runs
+    if (abortControllerRef.current) {
+      logger.log("   🚫 Aborting previous API requests");
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    if (eventSourceRef.current) {
+      logger.log("   🔌 Closing existing SSE connection");
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    // Cleanup function for when this effect is unmounted or re-run
+    const cleanup = () => {
+      isCancelled = true;
+      if (abortControllerRef.current) {
+        logger.log("   🚫 Aborting pending API requests (cleanup)");
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      if (eventSourceRef.current) {
+        logger.log("   🔌 Closing SSE connection (cleanup)");
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+
+    // Create new AbortController for this effect run
+    abortControllerRef.current = new AbortController();
+
+    // Clear data immediately when date range settings change
+    setData([]);
+    setIsConnected(false);
+    setIsLoading(true);
+
+    // If custom mode but dates not set, wait for user to select dates
+    if (dateRangeMode === "custom" && (!customStartDate || !customEndDate)) {
+      logger.log("⏸️ Custom mode selected but dates not set yet. Waiting for user input...");
+      setIsLoading(false);
+      return cleanup;
+    }
+
     // Simulation mode: Use mock data with simulated real-time updates
     if (config.isSimulation) {
       logger.log("🎮 SIMULATION MODE: Using mock data (no API connection)");
       logger.log(`   Generating data every ${intervalMs / 1000}s`);
 
-      // Initialize with mock data
-      setData(mockSpeedData);
-      setLastId(mockSpeedData.length);
-      setIsConnected(true); // Considered "connected" in simulation
+      // Initialize with mock data (filtered by date range if needed)
+      let initialMockData = mockSpeedData;
 
-      // Simulate real-time updates
-      const interval = setInterval(() => {
-        const newDataPoint = generateRealtimeData(lastId + 1);
-
-        setData((prevData) => {
-          const newData = [...prevData, newDataPoint];
-          // Keep only the last maxDataPoints
-          if (newData.length > maxDataPoints) {
-            return newData.slice(-maxDataPoints);
-          }
-          return newData;
+      // Filter mock data by date range if in custom mode
+      if (dateRangeMode === "custom" && customStartDate && customEndDate) {
+        const startDate = new Date(customStartDate);
+        const endDate = new Date(customEndDate);
+        initialMockData = mockSpeedData.filter((item) => {
+          const itemDate = new Date(item.created_at);
+          return itemDate >= startDate && itemDate <= endDate;
         });
+        logger.log(`   Filtered ${initialMockData.length} records for date range ${customStartDate} to ${customEndDate}`);
+      } else if (dateRangeMode === "today") {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        initialMockData = mockSpeedData.filter((item) => {
+          const itemDate = new Date(item.created_at);
+          return itemDate >= today && itemDate < tomorrow;
+        });
+        logger.log(`   Filtered ${initialMockData.length} records for today`);
+      }
 
-        setLastId((prevId) => prevId + 1);
-      }, intervalMs);
+      if (isCancelled) {
+        logger.log(`   🚫 Effect was cancelled, not setting simulation data`);
+        return cleanup;
+      }
 
-      return () => clearInterval(interval);
+      setData(initialMockData);
+      setLastId(initialMockData.length);
+      setIsConnected(true);
+      setIsLoading(false);
+
+      // Simulate real-time updates only in realtime mode
+      if (dateRangeMode === "realtime") {
+        intervalRef.current = setInterval(() => {
+          setLastId((prevId) => {
+            const newId = prevId + 1;
+            const newDataPoint = generateRealtimeData(newId);
+
+            setData((prevData) => {
+              const newData = [...prevData, newDataPoint];
+              // Keep only the last maxDataPoints
+              if (newData.length > maxDataPoints) {
+                return newData.slice(-maxDataPoints);
+              }
+              return newData;
+            });
+
+            return newId;
+          });
+        }, intervalMs);
+      }
+
+      return cleanup;
     }
 
     // Development or Production mode: Connect to real API
@@ -109,19 +215,41 @@ export function useRealtimeSpeedData(
             logger.log(`   ✅ Loaded ${initialData.length} initial speed records from API`);
           }
 
-          if (initialData.length > 0) {
-            setData(initialData);
-          } else {
-            logger.warn(`   ⚠️  No data available from API`);
+          // Check if this effect run has been cancelled before setting state
+          if (isCancelled) {
+            logger.log(`   🚫 Effect was cancelled, ignoring fetched data`);
+            return;
           }
+
+          logger.log(`   📊 Setting data state with ${initialData.length} records`);
+          setData(initialData);
           setIsConnected(true);
+          setIsLoading(false);
+
+          if (initialData.length === 0) {
+            logger.warn(`   ⚠️  No data available from API`);
+          } else {
+            logger.log(`   ✅ Data state updated successfully`);
+          }
         } catch (error) {
+          // Ignore abort errors
+          if (error instanceof Error && error.name === 'AbortError') {
+            logger.log(`   🚫 Request was aborted`);
+            return;
+          }
+
+          if (isCancelled) {
+            logger.log(`   🚫 Effect was cancelled, ignoring error`);
+            return;
+          }
+
           logger.error(`   ❌ Error fetching initial data:`, error);
           setIsConnected(false);
+          setIsLoading(false);
         }
       };
 
-      fetchInitialData().then(() => undefined);
+      fetchInitialData();
 
       // Only connect to SSE stream in realtime mode
       if (dateRangeMode === "realtime") {
@@ -151,19 +279,54 @@ export function useRealtimeSpeedData(
           setIsConnected(true);
         };
 
-        // Cleanup: Close SSE connection on unmount
-        return () => {
-          logger.log(`   🔌 Closing SSE connection`);
-          eventSource.close();
-          setIsConnected(false);
-        };
+        // Store the event source in ref for cleanup
+        eventSourceRef.current = eventSource;
       }
+
+      return cleanup;
     }
-  }, [intervalMs, maxDataPoints, lastId, dateRangeMode, customStartDate, customEndDate]);
+
+    return cleanup;
+  }, [intervalMs, maxDataPoints, dateRangeMode, customStartDate, customEndDate]);
+
+  // Client-side filtering to ensure only data within the selected date range is displayed
+  const filteredData = useMemo(() => {
+    // In realtime mode, show all data
+    if (dateRangeMode === "realtime") {
+      return data;
+    }
+
+    // For "today" mode
+    if (dateRangeMode === "today") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      return data.filter((item) => {
+        const itemDate = new Date(item.created_at);
+        return itemDate >= today && itemDate < tomorrow;
+      });
+    }
+
+    // For "custom" date range mode
+    if (dateRangeMode === "custom" && customStartDate && customEndDate) {
+      const startDate = new Date(customStartDate);
+      const endDate = new Date(customEndDate);
+
+      return data.filter((item) => {
+        const itemDate = new Date(item.created_at);
+        return itemDate >= startDate && itemDate <= endDate;
+      });
+    }
+
+    return data;
+  }, [data, dateRangeMode, customStartDate, customEndDate]);
 
   return {
-    data,
+    data: filteredData,
     isConnected,
+    isLoading,
     connectionMode: config.isSimulation ? 'simulation' : 'sse',
   };
 }
