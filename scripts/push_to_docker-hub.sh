@@ -8,7 +8,7 @@ source ../.env.local
 
 
 # Read package.json to get the version
-VERSION=$(node -p "require('../package.json').version")
+VERSION='latest'
 
 echo "Preparing to push Docker image..."
 echo "Image Name: $IMAGE_NAME"
