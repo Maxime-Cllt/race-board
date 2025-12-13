@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
       args:
         # Build-time variables for Next.js public environment variables
-        NEXT_PUBLIC_APP_MODE: ${NEXT_PUBLIC_APP_MODE:-DEV}
+        NEXT_PUBLIC_APP_MODE: ${NEXT_PUBLIC_APP_MODE:-PROD}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://192.168.1.100:8080}
 
     ports:
