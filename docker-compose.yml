@@ -19,7 +19,7 @@ services:
     # Optionally, use a specific env file
     # WARNING: Do not commit .env.local with secrets to version control
     env_file:
-      - .env.local
+      - .env
 
     restart: unless-stopped
 

@@ -4,7 +4,7 @@
 set -e
 
 # Load environment variables from .env.local
-source ../.env.local
+source .env
 
 
 # Read package.json to get the version
