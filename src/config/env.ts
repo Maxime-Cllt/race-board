@@ -12,7 +12,7 @@ export type AppMode = 'SIMULATION' | 'DEV' | 'PROD';
 
 export const APP_MODE = (process.env.NEXT_PUBLIC_APP_MODE || 'SIMULATION') as AppMode;
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.100:3000';
-export const API_KEY = process.env.NEXT_PUBLIC_API_KEY || '';
+export const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN || '';
 
 export const isSimulation = APP_MODE === 'SIMULATION';
 export const isDevelopment = APP_MODE === 'DEV';
@@ -77,7 +77,7 @@ if (typeof window === 'undefined') {
 export const config = {
   mode: APP_MODE,
   apiBaseUrl: API_BASE_URL,
-  apiKey: API_KEY,
+  apiToken: API_TOKEN,
   isSimulation,
   isDevelopment,
   isProduction,

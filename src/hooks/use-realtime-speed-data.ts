@@ -254,7 +254,7 @@ export function useRealtimeSpeedData(
       // Only connect to SSE stream in realtime mode
       if (dateRangeMode === "realtime") {
         logger.log(`   Establishing SSE connection to ${config.apiBaseUrl}/api/speeds/stream`);
-        const eventSource = speedAPI.connectToSpeedStream(
+        const streamConnection = speedAPI.connectToSpeedStream(
           (newSpeedData) => {
             logger.log("   📡 Received speed data:", newSpeedData);
             setIsConnected(true);
@@ -271,16 +271,15 @@ export function useRealtimeSpeedData(
           (error) => {
             logger.error("   ❌ SSE connection error:", error);
             setIsConnected(false);
+          },
+          () => {
+            logger.log("   ✅ SSE connection established successfully");
+            setIsConnected(true);
           }
         );
 
-        eventSource.onopen = () => {
-          logger.log("   ✅ SSE connection established successfully");
-          setIsConnected(true);
-        };
-
-        // Store the event source in ref for cleanup
-        eventSourceRef.current = eventSource;
+        // Store the stream connection in ref for cleanup
+        eventSourceRef.current = streamConnection as any;
       }
 
       return cleanup;

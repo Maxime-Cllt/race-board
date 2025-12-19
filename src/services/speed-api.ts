@@ -9,15 +9,15 @@ import { validateSpeedDataAPI, validateSpeedDataAPIArray, validateHealthCheck } 
  */
 export class SpeedStreamAPI {
   private baseUrl: string;
-  private apiKey: string;
+  private apiToken: string;
 
-  constructor(baseUrl: string = config.apiBaseUrl, apiKey: string = config.apiKey) {
+  constructor(baseUrl: string = config.apiBaseUrl, apiToken: string = config.apiToken) {
     this.baseUrl = baseUrl;
-    this.apiKey = apiKey;
+    this.apiToken = apiToken;
   }
 
   /**
-   * Get headers for API requests, including authentication if API key is set
+   * Get headers for API requests, including authentication if API token is set
    */
   private getHeaders(includeContentType: boolean = true): HeadersInit {
     const headers: HeadersInit = {};
@@ -26,9 +26,9 @@ export class SpeedStreamAPI {
       headers['Content-Type'] = 'application/json';
     }
 
-    // Add API key to headers if configured
-    if (this.apiKey) {
-      headers['X-API-Key'] = this.apiKey;
+    // Add Bearer token to headers if configured
+    if (this.apiToken) {
+      headers['Authorization'] = `Bearer ${this.apiToken}`;
     }
 
     return headers;
@@ -171,35 +171,81 @@ export class SpeedStreamAPI {
   /**
    * Establish a Server-Sent Events connection for real-time speed updates
    * GET /api/speeds/stream
+   * Note: Using fetch with ReadableStream instead of EventSource to support Bearer token authentication
    * @param onMessage Callback function to handle incoming speed data
    * @param onError Callback function to handle connection errors
-   * @returns EventSource instance
+   * @param onOpen Callback function to handle connection open event
+   * @returns Object with close() method to terminate the connection
    */
   connectToSpeedStream(
     onMessage: (data: SpeedData) => void,
-    onError?: (error: Event) => void
-  ): EventSource {
-    const eventSource = new EventSource(`${this.baseUrl}/api/speeds/stream`);
+    onError?: (error: Error) => void,
+    onOpen?: () => void
+  ): { close: () => void } {
+    let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+    let aborted = false;
 
-    eventSource.onmessage = (event) => {
+    const streamConnection = {
+      close: () => {
+        aborted = true;
+        if (reader) {
+          reader.cancel();
+          reader = null;
+        }
+      },
+    };
+
+    // Start the connection
+    (async () => {
       try {
-        const rawData = JSON.parse(event.data);
-        const apiData = validateSpeedDataAPI(rawData); // Validate SSE data
-        const speedData = apiToSpeedData(apiData);
-        onMessage(speedData);
+        const response = await fetch(`${this.baseUrl}/api/speeds/stream`, {
+          headers: this.getHeaders(false),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // Call onOpen callback if provided
+        if (onOpen) {
+          onOpen();
+        }
+
+        reader = response.body!.getReader();
+        const decoder = new TextDecoder();
+
+        while (!aborted) {
+          const { done, value } = await reader.read();
+
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const rawData = JSON.parse(line.substring(6));
+                const apiData = validateSpeedDataAPI(rawData); // Validate SSE data
+                const speedData = apiToSpeedData(apiData);
+                onMessage(speedData);
+              } catch (error) {
+                logger.error('Error parsing SSE data:', error);
+              }
+            }
+          }
+        }
       } catch (error) {
-        logger.error('Error parsing SSE data:', error);
+        if (!aborted) {
+          logger.error('SSE connection error:', error);
+          if (onError && error instanceof Error) {
+            onError(error);
+          }
+        }
       }
-    };
+    })();
 
-    eventSource.onerror = (error) => {
-      logger.error('SSE connection error:', error);
-      if (onError) {
-        onError(error);
-      }
-    };
-
-    return eventSource;
+    return streamConnection;
   }
 
   /**
