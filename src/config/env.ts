@@ -11,7 +11,8 @@ import { logger } from '@/lib/logger';
 export type AppMode = 'SIMULATION' | 'DEV' | 'PROD';
 
 export const APP_MODE = (process.env.NEXT_PUBLIC_APP_MODE || 'SIMULATION') as AppMode;
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.100:3000';
+// Empty string means use relative paths (for nginx routing)
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 export const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN || '';
 
 export const isSimulation = APP_MODE === 'SIMULATION';
@@ -21,6 +22,34 @@ export const isProduction = APP_MODE === 'PROD';
 // Helper to check if we need to connect to an API
 export const requiresAPI = isDevelopment || isProduction;
 
+// Proxy configuration
+// In browser context with HTTPS backend, use the Next.js API proxy to handle SSL certificates
+export const USE_API_PROXY = process.env.NEXT_PUBLIC_USE_API_PROXY === 'true';
+
+// Get the effective API URL (either direct or through proxy)
+export function getEffectiveApiUrl(): string {
+  if (USE_API_PROXY && typeof window !== 'undefined') {
+    // Use the Next.js proxy route for client-side requests
+    return '/api/proxy';
+  }
+  // If API_BASE_URL is empty, use relative paths (nginx will handle routing)
+  // Otherwise use the full URL
+  return API_BASE_URL;
+}
+
+// Get the effective SSE stream URL
+export function getEffectiveStreamUrl(): string {
+  if (USE_API_PROXY && typeof window !== 'undefined') {
+    // Use the Next.js SSE proxy route for client-side requests
+    return '/api/proxy-stream/speeds/stream';
+  }
+  // If API_BASE_URL is empty, use relative path (nginx routing)
+  if (!API_BASE_URL) {
+    return '/api/speeds/stream';
+  }
+  return `${API_BASE_URL}/api/speeds/stream`;
+}
+
 /**
  * Validate environment configuration for security
  */
@@ -29,8 +58,9 @@ function validateEnvironment() {
   const errors: string[] = [];
 
   // Check if API URL is provided when needed
-  if (requiresAPI && !process.env.NEXT_PUBLIC_API_URL) {
-    errors.push('NEXT_PUBLIC_API_URL is required in DEV and PROD modes');
+  // Empty string is allowed (means using nginx relative paths)
+  if (requiresAPI && process.env.NEXT_PUBLIC_API_URL === undefined) {
+    warnings.push('NEXT_PUBLIC_API_URL is not set. Using relative paths (nginx routing).');
   }
 
   // Warn about localhost/HTTP in development
@@ -43,8 +73,8 @@ function validateEnvironment() {
     }
   }
 
-  // Validate URL format
-  if (requiresAPI && API_BASE_URL) {
+  // Validate URL format (only if not empty - empty means relative paths)
+  if (requiresAPI && API_BASE_URL && API_BASE_URL !== '') {
     try {
       new URL(API_BASE_URL);
     } catch (e) {
@@ -82,4 +112,7 @@ export const config = {
   isDevelopment,
   isProduction,
   requiresAPI,
+  useApiProxy: USE_API_PROXY,
+  getEffectiveApiUrl,
+  getEffectiveStreamUrl,
 } as const;

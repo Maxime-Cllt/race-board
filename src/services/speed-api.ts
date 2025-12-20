@@ -10,10 +10,26 @@ import { validateSpeedDataAPI, validateSpeedDataAPIArray, validateHealthCheck } 
 export class SpeedStreamAPI {
   private baseUrl: string;
   private apiToken: string;
+  private useProxy: boolean;
 
   constructor(baseUrl: string = config.apiBaseUrl, apiToken: string = config.apiToken) {
     this.baseUrl = baseUrl;
     this.apiToken = apiToken;
+    this.useProxy = config.useApiProxy;
+  }
+
+  /**
+   * Get the effective API URL (direct or through proxy)
+   */
+  private getApiUrl(): string {
+    return config.getEffectiveApiUrl();
+  }
+
+  /**
+   * Get the effective SSE stream URL (direct or through proxy)
+   */
+  private getStreamUrl(): string {
+    return config.getEffectiveStreamUrl();
   }
 
   /**
@@ -27,6 +43,8 @@ export class SpeedStreamAPI {
     }
 
     // Add Bearer token to headers if configured
+    // When using proxy, the proxy will forward this header to the API
+    // When not using proxy, this header is sent directly to nginx/API
     if (this.apiToken) {
       headers['Authorization'] = `Bearer ${this.apiToken}`;
     }
@@ -40,7 +58,7 @@ export class SpeedStreamAPI {
    */
   async getLatestSpeed(): Promise<SpeedData | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/speeds/latest`, {
+      const response = await fetch(`${this.getApiUrl()}/api/speeds/latest`, {
         headers: this.getHeaders(false),
       });
       if (!response.ok) {
@@ -61,7 +79,7 @@ export class SpeedStreamAPI {
    */
   async getSpeeds(limit: number = 100): Promise<SpeedData[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/speeds?limit=${limit}`, {
+      const response = await fetch(`${this.getApiUrl()}/api/speeds?limit=${limit}`, {
         headers: this.getHeaders(false),
       });
       if (!response.ok) {
@@ -82,7 +100,7 @@ export class SpeedStreamAPI {
    */
   async getTodaySpeeds(limit: number = 1000): Promise<SpeedData[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/speeds/today?limit=${limit}`, {
+      const response = await fetch(`${this.getApiUrl()}/api/speeds/today?limit=${limit}`, {
         headers: this.getHeaders(false),
       });
       if (!response.ok) {
@@ -104,7 +122,7 @@ export class SpeedStreamAPI {
   async getPaginatedSpeeds(offset: number = 0, limit: number = 100): Promise<SpeedData[]> {
     try {
       const response = await fetch(
-        `${this.baseUrl}/api/speeds/paginated?offset=${offset}&limit=${limit}`,
+        `${this.getApiUrl()}/api/speeds/paginated?offset=${offset}&limit=${limit}`,
         { headers: this.getHeaders(false) }
       );
       if (!response.ok) {
@@ -131,7 +149,7 @@ export class SpeedStreamAPI {
         start_date: startDate,
         end_date: endDate,
       });
-      const response = await fetch(`${this.baseUrl}/api/speeds/range?${params.toString()}`, {
+      const response = await fetch(`${this.getApiUrl()}/api/speeds/range?${params.toString()}`, {
         headers: this.getHeaders(false),
       });
       if (!response.ok) {
@@ -156,7 +174,7 @@ export class SpeedStreamAPI {
     lane: number;
   }): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/speeds`, {
+      const response = await fetch(`${this.getApiUrl()}/api/speeds`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify(data),
@@ -198,7 +216,7 @@ export class SpeedStreamAPI {
     // Start the connection
     (async () => {
       try {
-        const response = await fetch(`${this.baseUrl}/api/speeds/stream`, {
+        const response = await fetch(this.getStreamUrl(), {
           headers: this.getHeaders(false),
         });
 
@@ -254,7 +272,7 @@ export class SpeedStreamAPI {
    */
   async checkHealth(): Promise<{ status: string; message?: string } | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/health`, {
+      const response = await fetch(`${this.getApiUrl()}/health`, {
         headers: this.getHeaders(false),
       });
       if (!response.ok) {
