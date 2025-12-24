@@ -7,6 +7,36 @@ const nextConfig: NextConfig = {
 
   // Security headers
   async headers() {
+    // Build connect-src dynamically based on API URL
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    const connectSources = ["'self'"];
+
+    // Add common local development URLs
+    connectSources.push('http://127.0.0.1:8080');
+    connectSources.push('http://localhost:8080');
+    connectSources.push('https://127.0.0.1:8080');
+    connectSources.push('https://localhost:8080');
+
+    // Add the configured API URL if it's set and different from the defaults
+    if (apiUrl && apiUrl !== '') {
+      // Extract the origin (protocol + host + port) from the URL
+      try {
+        const url = new URL(apiUrl);
+        const origin = url.origin;
+        if (!connectSources.includes(origin)) {
+          connectSources.push(origin);
+        }
+      } catch (e) {
+        // If parsing fails, add the URL as-is
+        if (!connectSources.includes(apiUrl)) {
+          connectSources.push(apiUrl);
+        }
+      }
+    }
+
+    // Add wildcard for HTTPS
+    connectSources.push('https:');
+
     return [
       {
         source: '/:path*',
@@ -47,7 +77,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",
-              "connect-src 'self' http://192.168.1.75:8080 http://localhost:8080 https:",
+              `connect-src ${connectSources.join(' ')}`,
               "frame-ancestors 'self'",
             ].join('; ')
           }

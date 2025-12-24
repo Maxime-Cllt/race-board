@@ -10,19 +10,17 @@ import { validateSpeedDataAPI, validateSpeedDataAPIArray, validateHealthCheck } 
 export class SpeedStreamAPI {
   private baseUrl: string;
   private apiToken: string;
-  private useProxy: boolean;
 
   constructor(baseUrl: string = config.apiBaseUrl, apiToken: string = config.apiToken) {
     this.baseUrl = baseUrl;
     this.apiToken = apiToken;
-    this.useProxy = config.useApiProxy;
   }
 
   /**
    * Get the effective API URL (direct or through proxy)
    */
   private getApiUrl(): string {
-    return config.getEffectiveApiUrl();
+    return config.API_BASE_URL;
   }
 
   /**

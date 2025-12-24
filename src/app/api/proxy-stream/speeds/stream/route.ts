@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import https from 'https';
+import { fetchWithAgent } from '@/lib/fetch-agent';
 
 /**
  * SSE (Server-Sent Events) Proxy Route
@@ -13,11 +13,6 @@ import https from 'https';
 
 const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://127.0.0.1';
 const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN || '';
-
-// Create HTTPS agent that accepts self-signed certificates in development
-const httpsAgent = new https.Agent({
-  rejectUnauthorized: process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0',
-});
 
 export async function GET(request: NextRequest) {
   // Create a TransformStream for the SSE connection
@@ -41,11 +36,9 @@ export async function GET(request: NextRequest) {
   // Start the SSE connection to backend
   (async () => {
     try {
-      // Use native fetch with the custom agent
-      // @ts-ignore - agent is not in the standard fetch options but works in Node.js
-      const response = await fetch(backendUrl, {
+      // Use fetchWithAgent which properly handles HTTPS certificates in development
+      const response = await fetchWithAgent(backendUrl, {
         headers,
-        agent: httpsAgent,
       });
 
       if (!response.ok) {
