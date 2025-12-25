@@ -1,0 +1,205 @@
+"use client";
+
+import React, { useMemo } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import ReactECharts from "echarts-for-react";
+import { SpeedData, Lane } from "@/types/speed-data";
+import { format } from "date-fns";
+
+interface SpeedChartProps {
+  data: SpeedData[];
+  title?: string;
+  description?: string;
+}
+
+export const SpeedChart = React.memo(function SpeedChart({
+  data,
+  title = "Vitesses en temps réel",
+  description
+}: SpeedChartProps) {
+  // Memoize heavy computations - only recalculate when data changes
+  const processedData = useMemo(() => {
+    // Separate data by lane
+    const leftLaneData = data.filter((d) => d.lane === Lane.Left);
+    const rightLaneData = data.filter((d) => d.lane === Lane.Right);
+
+    // Get all unique timestamps and sort them
+    const allTimestamps = Array.from(new Set(data.map((d) => d.created_at))).sort();
+
+    // Create maps for quick lookup
+    const leftLaneMap = new Map(leftLaneData.map((d) => [d.created_at, d.speed]));
+    const rightLaneMap = new Map(rightLaneData.map((d) => [d.created_at, d.speed]));
+
+    // Build data arrays with null for missing values
+    const leftSpeeds = allTimestamps.map((ts) => leftLaneMap.get(ts) ?? null);
+    const rightSpeeds = allTimestamps.map((ts) => rightLaneMap.get(ts) ?? null);
+    const timestamps = allTimestamps.map((ts) => format(new Date(ts), "HH:mm"));
+
+    return {
+      leftSpeeds,
+      rightSpeeds,
+      timestamps,
+    };
+  }, [data]);
+
+  // Memoize ECharts option object - only rebuild when processed data changes
+  const option = useMemo(() => ({
+    tooltip: {
+      trigger: "axis",
+      axisPointer: {
+        type: "cross",
+      },
+      backgroundColor: "rgba(0, 0, 0, 0.8)",
+      borderColor: "#333",
+      textStyle: {
+        color: "#fff",
+      },
+    },
+    legend: {
+      data: ["Voie gauche", "Voie droite"],
+      textStyle: {
+        color: "#999",
+      },
+      top: "0%",
+    },
+    grid: {
+      left: "3%",
+      right: "4%",
+      bottom: "3%",
+      top: "12%",
+      containLabel: true,
+    },
+    xAxis: {
+      type: "category",
+      boundaryGap: false,
+      data: processedData.timestamps,
+      axisLine: {
+        lineStyle: {
+          color: "#999",
+        },
+      },
+    },
+    yAxis: {
+      type: "value",
+      name: "Vitesse (km/h)",
+      nameTextStyle: {
+        color: "#999",
+      },
+      axisLine: {
+        lineStyle: {
+          color: "#999",
+        },
+      },
+      splitLine: {
+        lineStyle: {
+          color: "#333",
+          opacity: 0.3,
+        },
+      },
+    },
+    series: [
+      {
+        name: "Voie gauche",
+        type: "line",
+        smooth: true,
+        symbol: "circle",
+        symbolSize: 5,
+        sampling: "lttb",
+        connectNulls: false,
+        itemStyle: {
+          color: "#3b82f6",
+        },
+        lineStyle: {
+          width: 2,
+        },
+        areaStyle: {
+          color: {
+            type: "linear",
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              {
+                offset: 0,
+                color: "rgba(59, 130, 246, 0.3)",
+              },
+              {
+                offset: 1,
+                color: "rgba(59, 130, 246, 0.05)",
+              },
+            ],
+          },
+        },
+        data: processedData.leftSpeeds,
+      },
+      {
+        name: "Voie droite",
+        type: "line",
+        smooth: true,
+        symbol: "circle",
+        symbolSize: 5,
+        sampling: "lttb",
+        connectNulls: false,
+        itemStyle: {
+          color: "#f97316",
+        },
+        lineStyle: {
+          width: 2,
+        },
+        areaStyle: {
+          color: {
+            type: "linear",
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              {
+                offset: 0,
+                color: "rgba(249, 115, 22, 0.3)",
+              },
+              {
+                offset: 1,
+                color: "rgba(249, 115, 22, 0.05)",
+              },
+            ],
+          },
+        },
+        data: processedData.rightSpeeds,
+      },
+    ],
+  }), [processedData]);
+
+  // Don't render chart if no data available
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{title}</CardTitle>
+          {description && <CardDescription>{description}</CardDescription>}
+        </CardHeader>
+        <CardContent className="flex items-center justify-center h-[300px] text-muted-foreground">
+          Aucune donnée disponible
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        {description && <CardDescription>{description}</CardDescription>}
+      </CardHeader>
+      <CardContent>
+        <ReactECharts
+          option={option}
+          style={{ height: "300px" }}
+          notMerge={true}
+          lazyUpdate={true}
+        />
+      </CardContent>
+    </Card>
+  );
+});

@@ -1,0 +1,63 @@
+services:
+  race-board:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Build-time variables for Next.js public environment variables
+        NEXT_PUBLIC_APP_MODE: ${NEXT_PUBLIC_APP_MODE:-PROD}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://192.168.1.100:8080}
+        NEXT_PUBLIC_API_TOKEN: ${NEXT_PUBLIC_API_TOKEN}
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+
+    # Optionally, use a specific env file
+    # WARNING: Do not commit .env.local with secrets to version control
+    env_file:
+      - .env
+
+    restart: unless-stopped
+
+    # Resource limits to prevent DoS and resource exhaustion
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'      # Limit to 1 CPU core
+          memory: 512M     # Limit to 512MB RAM
+        reservations:
+          cpus: '0.25'     # Reserve 0.25 CPU core
+          memory: 128M     # Reserve 128MB RAM
+
+    # Health check to ensure container is running properly
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+
+    # Logging configuration to prevent disk space exhaustion
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Network configuration
+    networks:
+      - race-board-network
+
+# Define network for better isolation
+networks:
+  race-board-network:
+    driver: bridge
