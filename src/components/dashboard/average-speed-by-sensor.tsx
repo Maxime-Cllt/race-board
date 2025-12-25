@@ -43,7 +43,7 @@ export const AverageSpeedBySensor = React.memo(function AverageSpeedBySensor({ d
       textStyle: {
         color: "#fff",
       },
-      formatter: (params: any) => {
+      formatter: (params: Array<{ axisValue: string; value: number }>) => {
         const param = params[0];
         return `${param.axisValue}<br/>Vitesse moyenne: ${param.value} km/h`;
       },

@@ -18,8 +18,8 @@ export async function getLocalIP(): Promise<string | null> {
     // Check if RTCPeerConnection is available
     const RTCPeerConnection =
       window.RTCPeerConnection ||
-      (window as any).webkitRTCPeerConnection ||
-      (window as any).mozRTCPeerConnection;
+      (window as unknown as { webkitRTCPeerConnection?: typeof window.RTCPeerConnection }).webkitRTCPeerConnection ||
+      (window as unknown as { mozRTCPeerConnection?: typeof window.RTCPeerConnection }).mozRTCPeerConnection;
 
     if (!RTCPeerConnection) {
       resolve(null);

@@ -19,7 +19,7 @@ export async function fetchWithAgent(
 ): Promise<Response> {
   // Only use the agent on the server side (Node.js environment)
   if (typeof window === 'undefined') {
-    // @ts-ignore - agent is not in the standard fetch options but works in Node.js
+    // @ts-expect-error - agent is not in the standard fetch options but works in Node.js
     return fetch(url, { ...options, agent: httpsAgent });
   }
 

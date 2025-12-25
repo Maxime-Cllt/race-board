@@ -55,7 +55,7 @@ function validateEnvironment() {
     if (requiresAPI && API_BASE_URL && API_BASE_URL !== '') {
         try {
             new URL(API_BASE_URL);
-        } catch (e) {
+        } catch {
             errors.push(`Invalid API URL format: ${API_BASE_URL}`);
         }
     }

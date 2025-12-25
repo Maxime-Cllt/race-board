@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
         if (!connectSources.includes(origin)) {
           connectSources.push(origin);
         }
-      } catch (e) {
+      } catch {
         // If parsing fails, add the URL as-is
         if (!connectSources.includes(apiUrl)) {
           connectSources.push(apiUrl);

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Settings, X, RotateCcw, QrCode, Download, RefreshCw, Calendar } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Settings, RotateCcw, QrCode, Download, RefreshCw, Calendar } from "lucide-react";
 import QRCodeLib from "qrcode";
-import { getShareableURL, getLocalIP, replaceLocalhostWithIP } from "@/lib/get-local-ip";
+import { getLocalIP, replaceLocalhostWithIP } from "@/lib/get-local-ip";
 import { logger } from "@/lib/logger";
 import {
   Sheet,
@@ -68,7 +68,7 @@ export function SettingsPanel({ availableSensors }: SettingsPanelProps) {
   };
 
   // Get shareable URL and generate QR code
-  const updateQRCode = async () => {
+  const updateQRCode = useCallback(async () => {
     setIsLoadingQR(true);
 
     if (typeof window === "undefined") {
@@ -97,12 +97,13 @@ export function SettingsPanel({ availableSensors }: SettingsPanelProps) {
     setShareableUrl(url);
     await generateQRCode(url);
     setIsLoadingQR(false);
-  };
+  }, [manualIP]);
 
   // Generate QR code when component mounts or manual IP changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     updateQRCode();
-  }, [manualIP]);
+  }, [updateQRCode]);
 
   const toggleSensor = (sensor: string) => {
     const newSensors = settings.selectedSensors.includes(sensor)

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SpeedRecords } from '../speed-records';
@@ -205,7 +205,7 @@ describe('SpeedRecords', () => {
       sensor_name: `Sensor ${i + 1}`,
       speed: 100 + i,
       lane: i % 2 === 0 ? Lane.Left : Lane.Right,
-      created_at: `2025-12-05T10:${i}:00Z`,
+      created_at: `2025-12-05T${String(10 + Math.floor(i / 60)).padStart(2, '0')}:${String(i % 60).padStart(2, '0')}:00Z`,
     }));
 
     it('shows pagination controls when more than 20 records', () => {
@@ -247,10 +247,17 @@ describe('SpeedRecords', () => {
       expect(screen.getByText(/Page 3 sur 3/i)).toBeInTheDocument();
     });
 
-    it('does not show pagination when 20 or fewer records', () => {
+    it('shows single page info when 20 or fewer records', () => {
       render(<SpeedRecords data={mockData} />);
 
-      expect(screen.queryByText(/Page/i)).not.toBeInTheDocument();
+      // Should show "Page 1 sur 1" since there's only one page
+      expect(screen.getByText(/Page 1 sur 1/i)).toBeInTheDocument();
+
+      // Previous and Next buttons should be disabled on single page
+      const prevButton = screen.getByRole('button', { name: /Précédent/i });
+      const nextButton = screen.getByRole('button', { name: /Suivant/i });
+      expect(prevButton).toBeDisabled();
+      expect(nextButton).toBeDisabled();
     });
   });
 
@@ -308,7 +315,8 @@ describe('SpeedRecords', () => {
       render(<SpeedRecords data={mockData} />);
 
       // Check for date format dd/MM/yyyy HH:mm:ss
-      expect(screen.getByText(/05\/12\/2025/)).toBeInTheDocument();
+      const dates = screen.getAllByText(/05\/12\/2025/);
+      expect(dates.length).toBeGreaterThan(0);
     });
 
     it('displays sensor names correctly', () => {
@@ -324,7 +332,7 @@ describe('SpeedRecords', () => {
       const dataWithNull: SpeedData[] = [
         {
           id: 1,
-          sensor_name: null as any,
+          sensor_name: null,
           speed: 250.5,
           lane: Lane.Left,
           created_at: '2025-12-05T10:00:00Z',

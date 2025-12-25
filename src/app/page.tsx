@@ -18,7 +18,7 @@ import {
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SettingsPanel } from "@/components/settings-panel";
 import { Gauge, TrendingUp, Activity, Zap } from "lucide-react";
-import { useMemo, useEffect, useState, useRef } from "react";
+import { useMemo, useLayoutEffect, useState, useRef } from "react";
 import { useRealtimeSpeedData } from "@/hooks/use-realtime-speed-data";
 import { useSettings } from "@/contexts/settings-context";
 import { config } from "@/config/env";
@@ -100,9 +100,10 @@ export default function Home() {
   const [hasNewRecord, setHasNewRecord] = useState(false);
   const previousMaxSpeed = useRef(0);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     // Check if we have a new record (and it's not the initial load)
     if (stats.maxSpeed > previousMaxSpeed.current && previousMaxSpeed.current > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHasNewRecord(true);
       // Reset animation after 3 seconds
       const timer = setTimeout(() => setHasNewRecord(false), 3000);

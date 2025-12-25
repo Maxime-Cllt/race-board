@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { SpeedData, Lane } from "@/types/speed-data";
 import { mockSpeedData } from "@/lib/mock-data";
 import { speedAPI } from "@/services/speed-api";
@@ -49,9 +49,9 @@ export function useRealtimeSpeedData(
   customEndDate: string | null = null
 ) {
   const [data, setData] = useState<SpeedData[]>([]);
-  const [lastId, setLastId] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [, setLastId] = useState(0);
 
   // Refs to track cleanup functions
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -126,6 +126,7 @@ export function useRealtimeSpeedData(
     abortControllerRef.current = new AbortController();
 
     // Clear data immediately when date range settings change
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setData([]);
     setIsConnected(false);
     setIsLoading(true);
@@ -305,7 +306,7 @@ export function useRealtimeSpeedData(
         );
 
         // Store the stream connection in ref for cleanup
-        eventSourceRef.current = streamConnection as any;
+        eventSourceRef.current = streamConnection as unknown as EventSource;
       }
 
       return cleanup;

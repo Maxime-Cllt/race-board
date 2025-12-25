@@ -51,7 +51,7 @@ export const SpeedDistribution = React.memo(function SpeedDistribution({ data }:
       textStyle: {
         color: "#fff",
       },
-      formatter: (params: any) => {
+      formatter: (params: Array<{ axisValue: string; value: number }>) => {
         const param = params[0];
         return `${param.axisValue} km/h<br/>Nombre de passages: ${param.value}`;
       },

@@ -45,7 +45,7 @@ export const SensorStats = React.memo(function SensorStats({ data }: SensorStats
       textStyle: {
         color: "#fff",
       },
-      formatter: (params: any) => {
+      formatter: (params: Array<{ name: string; value: number }>) => {
         const sensor = params[0].name;
         const avgSpeed = params[0].value;
         const count = processedData.sensorData[sensor].count;

@@ -60,7 +60,7 @@ export const ActivityHeatmap = React.memo(function ActivityHeatmap({ data }: Act
       textStyle: {
         color: "#fff",
       },
-      formatter: (params: any) => {
+      formatter: (params: { data: [number, number, number] }) => {
         const hour = processedData.hours[params.data[0]];
         const sensor = processedData.sensors[params.data[1]];
         const value = params.data[2];

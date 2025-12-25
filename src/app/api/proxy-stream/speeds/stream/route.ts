@@ -1,4 +1,3 @@
-import { NextRequest } from 'next/server';
 import { fetchWithAgent } from '@/lib/fetch-agent';
 
 /**
@@ -14,7 +13,7 @@ import { fetchWithAgent } from '@/lib/fetch-agent';
 const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://127.0.0.1';
 const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN || '';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   // Create a TransformStream for the SSE connection
   const encoder = new TextEncoder();
   const stream = new TransformStream();

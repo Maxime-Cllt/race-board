@@ -4,7 +4,7 @@
  */
 
 import { z } from 'zod';
-import { Lane, SpeedData, SpeedDataAPI } from '@/types/speed-data';
+import { Lane, SpeedDataAPI } from '@/types/speed-data';
 
 /**
  * Schema for API SpeedData response (before conversion)

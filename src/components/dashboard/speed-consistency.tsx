@@ -80,7 +80,7 @@ export const SpeedConsistency = React.memo(function SpeedConsistency({ data }: S
       textStyle: {
         color: "#fff",
       },
-      formatter: (params: any) => {
+      formatter: (params: { name: string; value: number; percent: number }) => {
         return `${params.name}: ${params.value} passages (${params.percent}%)`;
       },
     },

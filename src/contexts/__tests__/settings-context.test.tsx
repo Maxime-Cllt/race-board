@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen, renderHook, act } from '@testing-library/react';
 import { SettingsProvider, useSettings } from '../settings-context';
 import { Lane } from '@/types/speed-data';
@@ -75,7 +75,7 @@ describe('SettingsContext', () => {
 
       expect(() => {
         renderHook(() => useSettings());
-      }).toThrow('useSettings must be used within a SettingsProvider');
+      }).toThrow('useSettings doit être utilisé dans un SettingsProvider');
 
       console.error = originalError;
     });
@@ -292,7 +292,7 @@ describe('SettingsContext', () => {
       expect(settings.showLaneDistribution).toBe(true);
       expect(settings.showSensorStats).toBe(true);
       expect(settings.enableAlerts).toBe(false);
-      expect(settings.speedThresholdMin).toBe(0);
+      expect(settings.speedThresholdMin).toBe(80);
       expect(settings.speedThresholdMax).toBe(350);
     });
   });

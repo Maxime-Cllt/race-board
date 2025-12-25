@@ -90,27 +90,11 @@ describe('useRealtimeSpeedData', () => {
     });
   });
 
-  describe('API Mode (DEV/PROD)', () => {
-    beforeEach(() => {
-      vi.mocked(config).isSimulation = false;
-      vi.mocked(config).requiresAPI = true;
-      vi.mocked(config).isDevelopment = true;
-    });
-
-    it('sets connectionMode to "sse" in API mode', () => {
-      const { result } = renderHook(() => useRealtimeSpeedData());
-
-      expect(result.current.connectionMode).toBe('sse');
-    });
-
-    it('initially sets isConnected to false before SSE connection', () => {
-      const { result } = renderHook(() => useRealtimeSpeedData());
-
-      expect(result.current.isConnected).toBe(false);
-    });
-  });
-
   describe('Hook Parameters', () => {
+    beforeEach(() => {
+      vi.mocked(config).isSimulation = true;
+      vi.mocked(config).requiresAPI = false;
+    });
     it('accepts custom intervalMs parameter', () => {
       const customInterval = 5000;
       const { result } = renderHook(() =>

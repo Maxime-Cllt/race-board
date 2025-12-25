@@ -119,22 +119,20 @@ function extractSystemSettings(settings: AppSettings): SystemSettings {
 // ============================================================================
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<AppSettings>(defaultSettings);
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  // Charger les réglages depuis localStorage au démarrage
-  useEffect(() => {
+  const [settings, setSettings] = useState<AppSettings>(() => {
+    // Charger les réglages depuis localStorage au démarrage
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
         const parsedSettings = JSON.parse(stored);
-        setSettings({ ...defaultSettings, ...parsedSettings });
+        return { ...defaultSettings, ...parsedSettings };
       } catch (error) {
         logger.error("Erreur lors du chargement des réglages:", error);
       }
     }
-    setIsInitialized(true);
-  }, []);
+    return defaultSettings;
+  });
+  const [isInitialized] = useState(true);
 
   // Sauvegarder les réglages dans localStorage à chaque modification
   useEffect(() => {
@@ -154,6 +152,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const resetSettings = useCallback(() => {
     setSettings(defaultSettings);
+    localStorage.removeItem(STORAGE_KEY);
   }, []);
 
   // Create specialized update functions for each context
