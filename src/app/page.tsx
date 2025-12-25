@@ -1,18 +1,20 @@
 "use client";
 
 import { StatCard } from "@/components/dashboard/stat-card";
-import { SpeedChart } from "@/components/dashboard/speed-chart";
-import { LaneDistribution } from "@/components/dashboard/lane-distribution";
-import { SensorStats } from "@/components/dashboard/sensor-stats";
-import { AverageSpeedBySensor } from "@/components/dashboard/average-speed-by-sensor";
-import { SpeedDistribution } from "@/components/dashboard/speed-distribution";
-import { HourlyTrend } from "@/components/dashboard/hourly-trend";
-import { SpeedRecords } from "@/components/dashboard/speed-records";
-import { ActivityHeatmap } from "@/components/dashboard/activity-heatmap";
-import { LanePerformance } from "@/components/dashboard/lane-performance";
-import { SpeedConsistency } from "@/components/dashboard/speed-consistency";
-import { TopSensors } from "@/components/dashboard/top-sensors";
-import { TimePeriodAnalysis } from "@/components/dashboard/time-period-analysis";
+import {
+  LazySpeedChart,
+  LazyLaneDistribution,
+  LazySensorStats,
+  LazyAverageSpeedBySensor,
+  LazySpeedDistribution,
+  LazyHourlyTrend,
+  LazySpeedRecords,
+  LazyActivityHeatmap,
+  LazyLanePerformance,
+  LazySpeedConsistency,
+  LazyTopSensors,
+  LazyTimePeriodAnalysis
+} from "@/components/dashboard/lazy-charts";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SettingsPanel } from "@/components/settings-panel";
 import { Gauge, TrendingUp, Activity, Zap } from "lucide-react";
@@ -34,7 +36,7 @@ export default function Home() {
     settings.customEndDate
   );
 
-  // Filter data based on settings
+  // Filter data based on settings - optimized dependencies
   const filteredData = useMemo(() => {
     return realtimeData.filter((data) => {
       // Filter by sensor
@@ -53,7 +55,14 @@ export default function Home() {
 
       return sensorMatch && laneMatch && speedMatch;
     });
-  }, [realtimeData, settings]);
+  }, [
+    realtimeData,
+    settings.selectedSensors,
+    settings.selectedLanes,
+    settings.enableAlerts,
+    settings.speedThresholdMin,
+    settings.speedThresholdMax
+  ]);
 
   // Extract unique sensor names from realtime data
   const availableSensors = useMemo(() => {
@@ -178,7 +187,7 @@ export default function Home() {
         <div className="grid gap-6 lg:grid-cols-2 mb-8">
           {settings.showSpeedChart && (
             <div className="lg:col-span-2">
-              <SpeedChart
+              <LazySpeedChart
                 data={filteredData}
                 title="Évolution des vitesses"
                 description={
@@ -190,9 +199,9 @@ export default function Home() {
             </div>
           )}
           {settings.showLaneDistribution && (
-            <LaneDistribution data={filteredData} />
+            <LazyLaneDistribution data={filteredData} />
           )}
-          {settings.showSensorStats && <SensorStats data={filteredData} />}
+          {settings.showSensorStats && <LazySensorStats data={filteredData} />}
         </div>
 
         {/* Advanced Analytics Section */}
@@ -214,45 +223,45 @@ export default function Home() {
             {/* Row 1: Hourly Trend */}
             {settings.showHourlyTrend && (
               <div className="grid gap-6 mb-6">
-                <HourlyTrend data={filteredData} />
+                <LazyHourlyTrend data={filteredData} />
               </div>
             )}
 
             {/* Row 2: Speed Records Table (Full Width) */}
             {settings.showSpeedRecords && (
               <div className="grid gap-6 mb-6">
-                <SpeedRecords data={filteredData} />
+                <LazySpeedRecords data={filteredData} />
               </div>
             )}
 
             {/* Row 3: Distribution and Average by Sensor */}
             {(settings.showSpeedDistribution || settings.showAverageSpeedBySensor) && (
               <div className="grid gap-6 lg:grid-cols-2 mb-6">
-                {settings.showSpeedDistribution && <SpeedDistribution data={filteredData} />}
-                {settings.showAverageSpeedBySensor && <AverageSpeedBySensor data={filteredData} />}
+                {settings.showSpeedDistribution && <LazySpeedDistribution data={filteredData} />}
+                {settings.showAverageSpeedBySensor && <LazyAverageSpeedBySensor data={filteredData} />}
               </div>
             )}
 
             {/* Row 4: Activity Heatmap */}
             {settings.showActivityHeatmap && (
               <div className="grid gap-6 mb-6">
-                <ActivityHeatmap data={filteredData} />
+                <LazyActivityHeatmap data={filteredData} />
               </div>
             )}
 
             {/* Row 5: Lane Performance and Speed Consistency */}
             {(settings.showLanePerformance || settings.showSpeedConsistency) && (
               <div className="grid gap-6 lg:grid-cols-2 mb-6">
-                {settings.showLanePerformance && <LanePerformance data={filteredData} />}
-                {settings.showSpeedConsistency && <SpeedConsistency data={filteredData} />}
+                {settings.showLanePerformance && <LazyLanePerformance data={filteredData} />}
+                {settings.showSpeedConsistency && <LazySpeedConsistency data={filteredData} />}
               </div>
             )}
 
             {/* Row 6: Top Sensors and Time Period Analysis */}
             {(settings.showTopSensors || settings.showTimePeriodAnalysis) && (
               <div className="grid gap-6 lg:grid-cols-2 mb-6">
-                {settings.showTopSensors && <TopSensors data={filteredData} />}
-                {settings.showTimePeriodAnalysis && <TimePeriodAnalysis data={filteredData} />}
+                {settings.showTopSensors && <LazyTopSensors data={filteredData} />}
+                {settings.showTimePeriodAnalysis && <LazyTimePeriodAnalysis data={filteredData} />}
               </div>
             )}
           </div>

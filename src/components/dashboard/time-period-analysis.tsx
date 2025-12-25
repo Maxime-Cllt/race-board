@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import ReactECharts from "echarts-for-react";
 import { SpeedData } from "@/types/speed-data";
@@ -9,57 +10,63 @@ interface TimePeriodAnalysisProps {
   data: SpeedData[];
 }
 
-export function TimePeriodAnalysis({ data }: TimePeriodAnalysisProps) {
-  // Define time periods
-  const getTimePeriod = (hour: number): string => {
-    if (hour >= 6 && hour < 12) return "Matin (6h-12h)";
-    if (hour >= 12 && hour < 18) return "Après-midi (12h-18h)";
-    if (hour >= 18 && hour < 22) return "Soirée (18h-22h)";
-    return "Nuit (22h-6h)";
-  };
+export const TimePeriodAnalysis = React.memo(function TimePeriodAnalysis({ data }: TimePeriodAnalysisProps) {
+  // Memoize heavy computations - only recalculate when data changes
+  const processedData = useMemo(() => {
+    // Define time periods
+    const getTimePeriod = (hour: number): string => {
+      if (hour >= 6 && hour < 12) return "Matin (6h-12h)";
+      if (hour >= 12 && hour < 18) return "Après-midi (12h-18h)";
+      if (hour >= 18 && hour < 22) return "Soirée (18h-22h)";
+      return "Nuit (22h-6h)";
+    };
 
-  // Group data by time period
-  const periodData = data.reduce((acc, curr) => {
-    const hour = new Date(curr.created_at).getHours();
-    const period = getTimePeriod(hour);
+    // Group data by time period
+    const periodData = data.reduce((acc, curr) => {
+      const hour = new Date(curr.created_at).getHours();
+      const period = getTimePeriod(hour);
 
-    if (!acc[period]) {
-      acc[period] = {
-        speeds: [],
-        count: 0,
-      };
-    }
-    acc[period].speeds.push(curr.speed);
-    acc[period].count += 1;
-    return acc;
-  }, {} as Record<string, { speeds: number[]; count: number }>);
+      if (!acc[period]) {
+        acc[period] = {
+          speeds: [],
+          count: 0,
+        };
+      }
+      acc[period].speeds.push(curr.speed);
+      acc[period].count += 1;
+      return acc;
+    }, {} as Record<string, { speeds: number[]; count: number }>);
 
-  // Calculate statistics for each period
-  const periods = ["Matin (6h-12h)", "Après-midi (12h-18h)", "Soirée (18h-22h)", "Nuit (22h-6h)"];
+    // Calculate statistics for each period
+    const periods = ["Matin (6h-12h)", "Après-midi (12h-18h)", "Soirée (18h-22h)", "Nuit (22h-6h)"];
 
-  const periodStats = periods.map((period) => {
-    const data = periodData[period];
-    if (!data || data.speeds.length === 0) {
+    const periodStats = periods.map((period) => {
+      const data = periodData[period];
+      if (!data || data.speeds.length === 0) {
+        return {
+          period,
+          avgSpeed: 0,
+          maxSpeed: 0,
+          count: 0,
+        };
+      }
+
+      const avgSpeed = data.speeds.reduce((a, b) => a + b, 0) / data.speeds.length;
+      const maxSpeed = Math.max(...data.speeds);
+
       return {
         period,
-        avgSpeed: 0,
-        maxSpeed: 0,
-        count: 0,
+        avgSpeed: Math.round(avgSpeed * 10) / 10,
+        maxSpeed: Math.round(maxSpeed * 10) / 10,
+        count: data.count,
       };
-    }
+    });
 
-    const avgSpeed = data.speeds.reduce((a, b) => a + b, 0) / data.speeds.length;
-    const maxSpeed = Math.max(...data.speeds);
+    return { periods, periodStats };
+  }, [data]);
 
-    return {
-      period,
-      avgSpeed: Math.round(avgSpeed * 10) / 10,
-      maxSpeed: Math.round(maxSpeed * 10) / 10,
-      count: data.count,
-    };
-  });
-
-  const option = {
+  // Memoize ECharts option object
+  const option = useMemo(() => ({
     tooltip: {
       trigger: "axis",
       backgroundColor: "rgba(0, 0, 0, 0.8)",
@@ -87,7 +94,7 @@ export function TimePeriodAnalysis({ data }: TimePeriodAnalysisProps) {
     },
     xAxis: {
       type: "category",
-      data: periods,
+      data: processedData.periods,
       axisLabel: {
         color: "#999",
         interval: 0,
@@ -147,7 +154,7 @@ export function TimePeriodAnalysis({ data }: TimePeriodAnalysisProps) {
         name: "Vitesse moyenne",
         type: "bar",
         yAxisIndex: 0,
-        data: periodStats.map((s) => s.avgSpeed),
+        data: processedData.periodStats.map((s) => s.avgSpeed),
         itemStyle: {
           color: {
             type: "linear",
@@ -178,7 +185,7 @@ export function TimePeriodAnalysis({ data }: TimePeriodAnalysisProps) {
         name: "Vitesse max",
         type: "bar",
         yAxisIndex: 0,
-        data: periodStats.map((s) => s.maxSpeed),
+        data: processedData.periodStats.map((s) => s.maxSpeed),
         itemStyle: {
           color: {
             type: "linear",
@@ -209,7 +216,7 @@ export function TimePeriodAnalysis({ data }: TimePeriodAnalysisProps) {
         name: "Nombre de passages",
         type: "line",
         yAxisIndex: 1,
-        data: periodStats.map((s) => s.count),
+        data: processedData.periodStats.map((s) => s.count),
         smooth: true,
         itemStyle: {
           color: "#ec4899",
@@ -240,7 +247,14 @@ export function TimePeriodAnalysis({ data }: TimePeriodAnalysisProps) {
         },
       },
     ],
-  };
+  }), [processedData]);
+
+  // Memoize most active period
+  const mostActivePeriod = useMemo(() => {
+    return processedData.periodStats.reduce((max, current) =>
+      current.count > max.count ? current : max
+    );
+  }, [processedData.periodStats]);
 
   // Don't render chart if no data available
   if (data.length === 0) {
@@ -260,11 +274,6 @@ export function TimePeriodAnalysis({ data }: TimePeriodAnalysisProps) {
     );
   }
 
-  // Find the most active period
-  const mostActivePeriod = periodStats.reduce((max, current) =>
-    current.count > max.count ? current : max
-  );
-
   return (
     <Card>
       <CardHeader>
@@ -275,7 +284,12 @@ export function TimePeriodAnalysis({ data }: TimePeriodAnalysisProps) {
         <CardDescription>Vitesses et activité selon les périodes de la journée</CardDescription>
       </CardHeader>
       <CardContent>
-        <ReactECharts option={option} style={{ height: "350px" }} />
+        <ReactECharts
+          option={option}
+          style={{ height: "350px" }}
+          notMerge={true}
+          lazyUpdate={true}
+        />
         <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
           <div className="flex items-center justify-between">
             <div>
@@ -291,4 +305,4 @@ export function TimePeriodAnalysis({ data }: TimePeriodAnalysisProps) {
       </CardContent>
     </Card>
   );
-}
+});

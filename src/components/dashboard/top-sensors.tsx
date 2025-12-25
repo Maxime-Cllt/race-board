@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SpeedData } from "@/types/speed-data";
@@ -9,39 +10,42 @@ interface TopSensorsProps {
   data: SpeedData[];
 }
 
-export function TopSensors({ data }: TopSensorsProps) {
-  // Group data by sensor
-  const sensorData = data.reduce((acc, curr) => {
-    const sensorName = curr.sensor_name || "Unknown";
-    if (!acc[sensorName]) {
-      acc[sensorName] = {
-        name: sensorName,
-        speeds: [],
-        count: 0,
+export const TopSensors = React.memo(function TopSensors({ data }: TopSensorsProps) {
+  // Memoize heavy computations - only recalculate when data changes
+  const topSensors = useMemo(() => {
+    // Group data by sensor
+    const sensorData = data.reduce((acc, curr) => {
+      const sensorName = curr.sensor_name || "Unknown";
+      if (!acc[sensorName]) {
+        acc[sensorName] = {
+          name: sensorName,
+          speeds: [],
+          count: 0,
+        };
+      }
+      acc[sensorName].speeds.push(curr.speed);
+      acc[sensorName].count += 1;
+      return acc;
+    }, {} as Record<string, { name: string; speeds: number[]; count: number }>);
+
+    // Calculate statistics for each sensor
+    const sensorStats = Object.values(sensorData).map((sensor) => {
+      const avgSpeed = sensor.speeds.reduce((a, b) => a + b, 0) / sensor.speeds.length;
+      const maxSpeed = Math.max(...sensor.speeds);
+      const minSpeed = Math.min(...sensor.speeds);
+
+      return {
+        name: sensor.name,
+        count: sensor.count,
+        avgSpeed: Math.round(avgSpeed * 10) / 10,
+        maxSpeed: Math.round(maxSpeed * 10) / 10,
+        minSpeed: Math.round(minSpeed * 10) / 10,
       };
-    }
-    acc[sensorName].speeds.push(curr.speed);
-    acc[sensorName].count += 1;
-    return acc;
-  }, {} as Record<string, { name: string; speeds: number[]; count: number }>);
+    });
 
-  // Calculate statistics for each sensor
-  const sensorStats = Object.values(sensorData).map((sensor) => {
-    const avgSpeed = sensor.speeds.reduce((a, b) => a + b, 0) / sensor.speeds.length;
-    const maxSpeed = Math.max(...sensor.speeds);
-    const minSpeed = Math.min(...sensor.speeds);
-
-    return {
-      name: sensor.name,
-      count: sensor.count,
-      avgSpeed: Math.round(avgSpeed * 10) / 10,
-      maxSpeed: Math.round(maxSpeed * 10) / 10,
-      minSpeed: Math.round(minSpeed * 10) / 10,
-    };
-  });
-
-  // Sort by count (most active sensors first)
-  const topSensors = sensorStats.sort((a, b) => b.count - a.count).slice(0, 5);
+    // Sort by count (most active sensors first)
+    return sensorStats.sort((a, b) => b.count - a.count).slice(0, 5);
+  }, [data]);
 
   // Don't render if no data available
   if (data.length === 0) {
@@ -130,4 +134,4 @@ export function TopSensors({ data }: TopSensorsProps) {
       </CardContent>
     </Card>
   );
-}
+});

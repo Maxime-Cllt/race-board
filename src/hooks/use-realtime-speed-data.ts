@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { SpeedData, Lane } from "@/types/speed-data";
 import { mockSpeedData } from "@/lib/mock-data";
 import { speedAPI } from "@/services/speed-api";
@@ -58,6 +58,10 @@ export function useRealtimeSpeedData(
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Debounce timeout for batching SSE updates
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingUpdatesRef = useRef<SpeedData[]>([]);
+
   // Debug: Track data changes
   useEffect(() => {
     logger.log(`📈 Data state changed: ${data.length} records`);
@@ -94,6 +98,14 @@ export function useRealtimeSpeedData(
     // Cleanup function for when this effect is unmounted or re-run
     const cleanup = () => {
       isCancelled = true;
+
+      // Clear debounce timeout
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+        debounceTimeoutRef.current = null;
+      }
+      pendingUpdatesRef.current = [];
+
       if (abortControllerRef.current) {
         logger.log("   🚫 Aborting pending API requests (cleanup)");
         abortControllerRef.current.abort();
@@ -259,14 +271,28 @@ export function useRealtimeSpeedData(
             logger.log("   📡 Received speed data:", newSpeedData);
             setIsConnected(true);
 
-            setData((prevData) => {
-              const newData = [...prevData, newSpeedData];
-              // Keep only the last maxDataPoints
-              if (newData.length > maxDataPoints) {
-                return newData.slice(-maxDataPoints);
-              }
-              return newData;
-            });
+            // Batch SSE updates to reduce re-render frequency
+            pendingUpdatesRef.current.push(newSpeedData);
+
+            if (debounceTimeoutRef.current) {
+              clearTimeout(debounceTimeoutRef.current);
+            }
+
+            debounceTimeoutRef.current = setTimeout(() => {
+              if (isCancelled) return;
+
+              const updates = [...pendingUpdatesRef.current];
+              pendingUpdatesRef.current = [];
+
+              setData((prevData) => {
+                const newData = [...prevData, ...updates];
+                // Keep only the last maxDataPoints
+                if (newData.length > maxDataPoints) {
+                  return newData.slice(-maxDataPoints);
+                }
+                return newData;
+              });
+            }, 100); // Batch updates within 100ms window
           },
           (error) => {
             logger.error("   ❌ SSE connection error:", error);

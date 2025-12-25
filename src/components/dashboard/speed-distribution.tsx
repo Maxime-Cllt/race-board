@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import ReactECharts from "echarts-for-react";
 import { SpeedData } from "@/types/speed-data";
@@ -8,32 +9,38 @@ interface SpeedDistributionProps {
   data: SpeedData[];
 }
 
-export function SpeedDistribution({ data }: SpeedDistributionProps) {
-  // Create speed ranges (bins)
+export const SpeedDistribution = React.memo(function SpeedDistribution({ data }: SpeedDistributionProps) {
   const binSize = 25; // 25 km/h per bin
-  const minSpeed = 0;
-  const maxSpeed = 400;
-  const bins: Record<string, number> = {};
 
-  // Initialize bins
-  for (let i = minSpeed; i < maxSpeed; i += binSize) {
-    const rangeLabel = `${i}-${i + binSize}`;
-    bins[rangeLabel] = 0;
-  }
+  // Memoize heavy computations - only recalculate when data changes
+  const processedData = useMemo(() => {
+    const minSpeed = 0;
+    const maxSpeed = 400;
+    const bins: Record<string, number> = {};
 
-  // Fill bins
-  data.forEach((d) => {
-    const binIndex = Math.floor(d.speed / binSize) * binSize;
-    const rangeLabel = `${binIndex}-${binIndex + binSize}`;
-    if (bins[rangeLabel] !== undefined) {
-      bins[rangeLabel] += 1;
+    // Initialize bins
+    for (let i = minSpeed; i < maxSpeed; i += binSize) {
+      const rangeLabel = `${i}-${i + binSize}`;
+      bins[rangeLabel] = 0;
     }
-  });
 
-  const labels = Object.keys(bins);
-  const values = Object.values(bins);
+    // Fill bins
+    data.forEach((d) => {
+      const binIndex = Math.floor(d.speed / binSize) * binSize;
+      const rangeLabel = `${binIndex}-${binIndex + binSize}`;
+      if (bins[rangeLabel] !== undefined) {
+        bins[rangeLabel] += 1;
+      }
+    });
 
-  const option = {
+    const labels = Object.keys(bins);
+    const values = Object.values(bins);
+
+    return { labels, values };
+  }, [data, binSize]);
+
+  // Memoize ECharts option object
+  const option = useMemo(() => ({
     tooltip: {
       trigger: "axis",
       axisPointer: {
@@ -58,7 +65,7 @@ export function SpeedDistribution({ data }: SpeedDistributionProps) {
     },
     xAxis: {
       type: "category",
-      data: labels,
+      data: processedData.labels,
       axisLabel: {
         rotate: 45,
         color: "#999",
@@ -92,7 +99,7 @@ export function SpeedDistribution({ data }: SpeedDistributionProps) {
       {
         name: "Distribution",
         type: "bar",
-        data: values,
+        data: processedData.values,
         itemStyle: {
           color: {
             type: "linear",
@@ -136,7 +143,7 @@ export function SpeedDistribution({ data }: SpeedDistributionProps) {
         },
       },
     ],
-  };
+  }), [processedData]);
 
   // Don't render chart if no data available
   if (data.length === 0) {
@@ -160,8 +167,13 @@ export function SpeedDistribution({ data }: SpeedDistributionProps) {
         <CardDescription>Répartition des vitesses par plages de {binSize} km/h</CardDescription>
       </CardHeader>
       <CardContent>
-        <ReactECharts option={option} style={{ height: "300px" }} />
+        <ReactECharts
+          option={option}
+          style={{ height: "300px" }}
+          notMerge={true}
+          lazyUpdate={true}
+        />
       </CardContent>
     </Card>
   );
-}
+});

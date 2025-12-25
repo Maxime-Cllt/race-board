@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import ReactECharts from "echarts-for-react";
 import { SpeedData } from "@/types/speed-data";
@@ -10,9 +11,9 @@ interface SpeedConsistencyProps {
   data: SpeedData[];
 }
 
-export function SpeedConsistency({ data }: SpeedConsistencyProps) {
-  // Calculate statistics
-  const calculateConsistency = () => {
+export const SpeedConsistency = React.memo(function SpeedConsistency({ data }: SpeedConsistencyProps) {
+  // Memoize heavy computations - only recalculate when data changes
+  const stats = useMemo(() => {
     if (data.length === 0) {
       return {
         mean: 0,
@@ -59,21 +60,19 @@ export function SpeedConsistency({ data }: SpeedConsistencyProps) {
       coefficientOfVariation: Math.round(coefficientOfVariation * 10) / 10,
       speedRanges,
     };
-  };
+  }, [data]);
 
-  const stats = calculateConsistency();
-
-  // Determine consistency level based on coefficient of variation
-  const getConsistencyLevel = (cv: number) => {
+  // Memoize consistency level
+  const consistencyLevel = useMemo(() => {
+    const cv = stats.coefficientOfVariation;
     if (cv < 10) return { label: "Très Consistant", color: "bg-green-500" };
     if (cv < 20) return { label: "Consistant", color: "bg-blue-500" };
     if (cv < 30) return { label: "Modéré", color: "bg-yellow-500" };
     return { label: "Variable", color: "bg-red-500" };
-  };
+  }, [stats.coefficientOfVariation]);
 
-  const consistencyLevel = getConsistencyLevel(stats.coefficientOfVariation);
-
-  const option = {
+  // Memoize ECharts option object
+  const option = useMemo(() => ({
     tooltip: {
       trigger: "item",
       backgroundColor: "rgba(0, 0, 0, 0.8)",
@@ -126,7 +125,7 @@ export function SpeedConsistency({ data }: SpeedConsistencyProps) {
         color: ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981"],
       },
     ],
-  };
+  }), [stats]);
 
   // Don't render chart if no data available
   if (data.length === 0) {
@@ -168,7 +167,12 @@ export function SpeedConsistency({ data }: SpeedConsistencyProps) {
           </div>
         </div>
 
-        <ReactECharts option={option} style={{ height: "300px" }} />
+        <ReactECharts
+          option={option}
+          style={{ height: "300px" }}
+          notMerge={true}
+          lazyUpdate={true}
+        />
 
         <div className="grid grid-cols-4 gap-3 mt-4">
           <div className="p-3 bg-card border border-border rounded-lg">
@@ -191,4 +195,4 @@ export function SpeedConsistency({ data }: SpeedConsistencyProps) {
       </CardContent>
     </Card>
   );
-}
+});

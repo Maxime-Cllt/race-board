@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import ReactECharts from "echarts-for-react";
 import { SpeedData } from "@/types/speed-data";
@@ -8,26 +9,32 @@ interface SensorStatsProps {
   data: SpeedData[];
 }
 
-export function SensorStats({ data }: SensorStatsProps) {
-  // Group data by sensor and calculate average speed
-  const sensorData = data.reduce((acc, curr) => {
-    const sensorName = curr.sensor_name || "Unknown";
-    if (!acc[sensorName]) {
-      acc[sensorName] = { speeds: [], count: 0 };
-    }
-    acc[sensorName].speeds.push(curr.speed);
-    acc[sensorName].count++;
-    return acc;
-  }, {} as Record<string, { speeds: number[]; count: number }>);
+export const SensorStats = React.memo(function SensorStats({ data }: SensorStatsProps) {
+  // Memoize heavy computations - only recalculate when data changes
+  const processedData = useMemo(() => {
+    // Group data by sensor and calculate average speed
+    const sensorData = data.reduce((acc, curr) => {
+      const sensorName = curr.sensor_name || "Unknown";
+      if (!acc[sensorName]) {
+        acc[sensorName] = { speeds: [], count: 0 };
+      }
+      acc[sensorName].speeds.push(curr.speed);
+      acc[sensorName].count++;
+      return acc;
+    }, {} as Record<string, { speeds: number[]; count: number }>);
 
-  const sensors = Object.keys(sensorData);
-  const avgSpeeds = sensors.map((sensor) => {
-    const speeds = sensorData[sensor].speeds;
-    return Math.round((speeds.reduce((a, b) => a + b, 0) / speeds.length) * 10) / 10;
-  });
-  const counts = sensors.map((sensor) => sensorData[sensor].count);
+    const sensors = Object.keys(sensorData);
+    const avgSpeeds = sensors.map((sensor) => {
+      const speeds = sensorData[sensor].speeds;
+      return Math.round((speeds.reduce((a, b) => a + b, 0) / speeds.length) * 10) / 10;
+    });
+    const counts = sensors.map((sensor) => sensorData[sensor].count);
 
-  const option = {
+    return { sensorData, sensors, avgSpeeds, counts };
+  }, [data]);
+
+  // Memoize ECharts option object
+  const option = useMemo(() => ({
     tooltip: {
       trigger: "axis",
       axisPointer: {
@@ -41,7 +48,7 @@ export function SensorStats({ data }: SensorStatsProps) {
       formatter: (params: any) => {
         const sensor = params[0].name;
         const avgSpeed = params[0].value;
-        const count = sensorData[sensor].count;
+        const count = processedData.sensorData[sensor].count;
         return `${sensor}<br/>Vitesse moyenne: ${avgSpeed} km/h<br/>Passages: ${count}`;
       },
     },
@@ -54,7 +61,7 @@ export function SensorStats({ data }: SensorStatsProps) {
     },
     xAxis: {
       type: "category",
-      data: sensors,
+      data: processedData.sensors,
       axisLabel: {
         rotate: 45,
         color: "#666",
@@ -87,7 +94,7 @@ export function SensorStats({ data }: SensorStatsProps) {
       {
         name: "Vitesse moyenne",
         type: "bar",
-        data: avgSpeeds,
+        data: processedData.avgSpeeds,
         itemStyle: {
           color: {
             type: "linear",
@@ -131,7 +138,7 @@ export function SensorStats({ data }: SensorStatsProps) {
         },
       },
     ],
-  };
+  }), [processedData]);
 
   // Don't render chart if no data available
   if (data.length === 0) {
@@ -155,8 +162,13 @@ export function SensorStats({ data }: SensorStatsProps) {
         <CardDescription>Vitesse moyenne par point de mesure</CardDescription>
       </CardHeader>
       <CardContent>
-        <ReactECharts option={option} style={{ height: "300px" }} />
+        <ReactECharts
+          option={option}
+          style={{ height: "300px" }}
+          notMerge={true}
+          lazyUpdate={true}
+        />
       </CardContent>
     </Card>
   );
-}
+});

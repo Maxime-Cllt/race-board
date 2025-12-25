@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import ReactECharts from "echarts-for-react";
 import { SpeedData } from "@/types/speed-data";
@@ -9,43 +10,49 @@ interface ActivityHeatmapProps {
   data: SpeedData[];
 }
 
-export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
-  // Get unique sensors and hours
-  const sensors = Array.from(new Set(data.map((d) => d.sensor_name || "Unknown")));
-  const hours = Array.from(new Set(data.map((d) => format(new Date(d.created_at), "HH:00")))).sort();
+export const ActivityHeatmap = React.memo(function ActivityHeatmap({ data }: ActivityHeatmapProps) {
+  // Memoize heavy computations - only recalculate when data changes
+  const processedData = useMemo(() => {
+    // Get unique sensors and hours
+    const sensors = Array.from(new Set(data.map((d) => d.sensor_name || "Unknown")));
+    const hours = Array.from(new Set(data.map((d) => format(new Date(d.created_at), "HH:00")))).sort();
 
-  // Create activity matrix
-  const activityMap: Record<string, Record<string, number>> = {};
+    // Create activity matrix
+    const activityMap: Record<string, Record<string, number>> = {};
 
-  sensors.forEach((sensor) => {
-    activityMap[sensor] = {};
-    hours.forEach((hour) => {
-      activityMap[sensor][hour] = 0;
+    sensors.forEach((sensor) => {
+      activityMap[sensor] = {};
+      hours.forEach((hour) => {
+        activityMap[sensor][hour] = 0;
+      });
     });
-  });
 
-  // Fill activity data
-  data.forEach((d) => {
-    const sensor = d.sensor_name || "Unknown";
-    const hour = format(new Date(d.created_at), "HH:00");
-    if (activityMap[sensor] && activityMap[sensor][hour] !== undefined) {
-      activityMap[sensor][hour] += 1;
-    }
-  });
-
-  // Convert to ECharts format [hourIndex, sensorIndex, value]
-  const heatmapData: [number, number, number][] = [];
-  hours.forEach((hour, hourIdx) => {
-    sensors.forEach((sensor, sensorIdx) => {
-      const value = activityMap[sensor][hour] || 0;
-      heatmapData.push([hourIdx, sensorIdx, value]);
+    // Fill activity data
+    data.forEach((d) => {
+      const sensor = d.sensor_name || "Unknown";
+      const hour = format(new Date(d.created_at), "HH:00");
+      if (activityMap[sensor] && activityMap[sensor][hour] !== undefined) {
+        activityMap[sensor][hour] += 1;
+      }
     });
-  });
 
-  // Find max value for color scale
-  const maxValue = Math.max(...heatmapData.map((d) => d[2]));
+    // Convert to ECharts format [hourIndex, sensorIndex, value]
+    const heatmapData: [number, number, number][] = [];
+    hours.forEach((hour, hourIdx) => {
+      sensors.forEach((sensor, sensorIdx) => {
+        const value = activityMap[sensor][hour] || 0;
+        heatmapData.push([hourIdx, sensorIdx, value]);
+      });
+    });
 
-  const option = {
+    // Find max value for color scale
+    const maxValue = Math.max(...heatmapData.map((d) => d[2]));
+
+    return { sensors, hours, heatmapData, maxValue };
+  }, [data]);
+
+  // Memoize ECharts option object
+  const option = useMemo(() => ({
     tooltip: {
       position: "top",
       backgroundColor: "rgba(0, 0, 0, 0.8)",
@@ -54,8 +61,8 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
         color: "#fff",
       },
       formatter: (params: any) => {
-        const hour = hours[params.data[0]];
-        const sensor = sensors[params.data[1]];
+        const hour = processedData.hours[params.data[0]];
+        const sensor = processedData.sensors[params.data[1]];
         const value = params.data[2];
         return `${sensor}<br/>${hour}<br/>Passages: ${value}`;
       },
@@ -69,7 +76,7 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
     },
     xAxis: {
       type: "category",
-      data: hours,
+      data: processedData.hours,
       splitArea: {
         show: true,
       },
@@ -85,7 +92,7 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
     },
     yAxis: {
       type: "category",
-      data: sensors,
+      data: processedData.sensors,
       splitArea: {
         show: true,
       },
@@ -101,7 +108,7 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
     },
     visualMap: {
       min: 0,
-      max: maxValue,
+      max: processedData.maxValue,
       calculable: true,
       orient: "horizontal",
       left: "center",
@@ -117,7 +124,7 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
       {
         name: "Activité",
         type: "heatmap",
-        data: heatmapData,
+        data: processedData.heatmapData,
         label: {
           show: false,
         },
@@ -129,7 +136,7 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
         },
       },
     ],
-  };
+  }), [processedData]);
 
   // Don't render chart if no data available
   if (data.length === 0) {
@@ -153,8 +160,13 @@ export function ActivityHeatmap({ data }: ActivityHeatmapProps) {
         <CardDescription>Densité de passages par capteur et par heure</CardDescription>
       </CardHeader>
       <CardContent>
-        <ReactECharts option={option} style={{ height: "400px" }} />
+        <ReactECharts
+          option={option}
+          style={{ height: "400px" }}
+          notMerge={true}
+          lazyUpdate={true}
+        />
       </CardContent>
     </Card>
   );
-}
+});

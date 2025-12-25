@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import ReactECharts from "echarts-for-react";
 import { SpeedData } from "@/types/speed-data";
@@ -9,31 +10,37 @@ interface HourlyTrendProps {
   data: SpeedData[];
 }
 
-export function HourlyTrend({ data }: HourlyTrendProps) {
-  // Group data by hour
-  const hourlyData = data.reduce((acc, curr) => {
-    const hour = format(new Date(curr.created_at), "HH:00");
-    if (!acc[hour]) {
-      acc[hour] = { speeds: [], count: 0 };
-    }
-    acc[hour].speeds.push(curr.speed);
-    acc[hour].count += 1;
-    return acc;
-  }, {} as Record<string, { speeds: number[]; count: number }>);
+export const HourlyTrend = React.memo(function HourlyTrend({ data }: HourlyTrendProps) {
+  // Memoize heavy computations - only recalculate when data changes
+  const processedData = useMemo(() => {
+    // Group data by hour
+    const hourlyData = data.reduce((acc, curr) => {
+      const hour = format(new Date(curr.created_at), "HH:00");
+      if (!acc[hour]) {
+        acc[hour] = { speeds: [], count: 0 };
+      }
+      acc[hour].speeds.push(curr.speed);
+      acc[hour].count += 1;
+      return acc;
+    }, {} as Record<string, { speeds: number[]; count: number }>);
 
-  // Sort hours
-  const hours = Object.keys(hourlyData).sort();
+    // Sort hours
+    const hours = Object.keys(hourlyData).sort();
 
-  // Calculate averages
-  const avgSpeeds = hours.map((hour) => {
-    const speeds = hourlyData[hour].speeds;
-    const avg = speeds.reduce((a, b) => a + b, 0) / speeds.length;
-    return Math.round(avg * 10) / 10;
-  });
+    // Calculate averages
+    const avgSpeeds = hours.map((hour) => {
+      const speeds = hourlyData[hour].speeds;
+      const avg = speeds.reduce((a, b) => a + b, 0) / speeds.length;
+      return Math.round(avg * 10) / 10;
+    });
 
-  const counts = hours.map((hour) => hourlyData[hour].count);
+    const counts = hours.map((hour) => hourlyData[hour].count);
 
-  const option = {
+    return { hours, avgSpeeds, counts };
+  }, [data]);
+
+  // Memoize ECharts option object
+  const option = useMemo(() => ({
     tooltip: {
       trigger: "axis",
       axisPointer: {
@@ -61,7 +68,7 @@ export function HourlyTrend({ data }: HourlyTrendProps) {
     },
     xAxis: {
       type: "category",
-      data: hours,
+      data: processedData.hours,
       axisLabel: {
         color: "#999",
       },
@@ -119,7 +126,7 @@ export function HourlyTrend({ data }: HourlyTrendProps) {
         name: "Vitesse moyenne",
         type: "line",
         yAxisIndex: 0,
-        data: avgSpeeds,
+        data: processedData.avgSpeeds,
         smooth: true,
         itemStyle: {
           color: "#ec4899",
@@ -153,7 +160,7 @@ export function HourlyTrend({ data }: HourlyTrendProps) {
         name: "Nombre de passages",
         type: "bar",
         yAxisIndex: 1,
-        data: counts,
+        data: processedData.counts,
         itemStyle: {
           color: "rgba(99, 102, 241, 0.6)",
           borderRadius: [4, 4, 0, 0],
@@ -165,7 +172,7 @@ export function HourlyTrend({ data }: HourlyTrendProps) {
         },
       },
     ],
-  };
+  }), [processedData]);
 
   // Don't render chart if no data available
   if (data.length === 0) {
@@ -189,8 +196,13 @@ export function HourlyTrend({ data }: HourlyTrendProps) {
         <CardDescription>Vitesse moyenne et volume d&apos;activité par heure</CardDescription>
       </CardHeader>
       <CardContent>
-        <ReactECharts option={option} style={{ height: "350px" }} />
+        <ReactECharts
+          option={option}
+          style={{ height: "350px" }}
+          notMerge={true}
+          lazyUpdate={true}
+        />
       </CardContent>
     </Card>
   );
-}
+});

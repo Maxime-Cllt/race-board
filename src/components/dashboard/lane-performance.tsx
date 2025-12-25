@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import ReactECharts from "echarts-for-react";
 import { SpeedData, Lane } from "@/types/speed-data";
@@ -9,27 +10,33 @@ interface LanePerformanceProps {
   data: SpeedData[];
 }
 
-export function LanePerformance({ data }: LanePerformanceProps) {
-  // Separate data by lane
-  const leftLaneData = data.filter((d) => d.lane === Lane.Left);
-  const rightLaneData = data.filter((d) => d.lane === Lane.Right);
+export const LanePerformance = React.memo(function LanePerformance({ data }: LanePerformanceProps) {
+  // Memoize heavy computations - only recalculate when data changes
+  const processedData = useMemo(() => {
+    // Separate data by lane
+    const leftLaneData = data.filter((d) => d.lane === Lane.Left);
+    const rightLaneData = data.filter((d) => d.lane === Lane.Right);
 
-  // Calculate statistics for each lane
-  const calculateStats = (laneData: SpeedData[]) => {
-    if (laneData.length === 0) return { avg: 0, max: 0, min: 0, count: 0 };
-    const speeds = laneData.map((d) => d.speed);
-    return {
-      avg: Math.round((speeds.reduce((a, b) => a + b, 0) / speeds.length) * 10) / 10,
-      max: Math.max(...speeds),
-      min: Math.min(...speeds),
-      count: laneData.length,
+    // Calculate statistics for each lane
+    const calculateStats = (laneData: SpeedData[]) => {
+      if (laneData.length === 0) return { avg: 0, max: 0, min: 0, count: 0 };
+      const speeds = laneData.map((d) => d.speed);
+      return {
+        avg: Math.round((speeds.reduce((a, b) => a + b, 0) / speeds.length) * 10) / 10,
+        max: Math.max(...speeds),
+        min: Math.min(...speeds),
+        count: laneData.length,
+      };
     };
-  };
 
-  const leftStats = calculateStats(leftLaneData);
-  const rightStats = calculateStats(rightLaneData);
+    const leftStats = calculateStats(leftLaneData);
+    const rightStats = calculateStats(rightLaneData);
 
-  const option = {
+    return { leftStats, rightStats };
+  }, [data]);
+
+  // Memoize ECharts option object
+  const option = useMemo(() => ({
     tooltip: {
       trigger: "axis",
       backgroundColor: "rgba(0, 0, 0, 0.8)",
@@ -90,7 +97,7 @@ export function LanePerformance({ data }: LanePerformanceProps) {
       {
         name: "Corridor Gauche",
         type: "bar",
-        data: [leftStats.avg, leftStats.max, leftStats.min, leftStats.count],
+        data: [processedData.leftStats.avg, processedData.leftStats.max, processedData.leftStats.min, processedData.leftStats.count],
         itemStyle: {
           color: {
             type: "linear",
@@ -121,7 +128,7 @@ export function LanePerformance({ data }: LanePerformanceProps) {
       {
         name: "Corridor Droit",
         type: "bar",
-        data: [rightStats.avg, rightStats.max, rightStats.min, rightStats.count],
+        data: [processedData.rightStats.avg, processedData.rightStats.max, processedData.rightStats.min, processedData.rightStats.count],
         itemStyle: {
           color: {
             type: "linear",
@@ -150,7 +157,7 @@ export function LanePerformance({ data }: LanePerformanceProps) {
         barWidth: "40%",
       },
     ],
-  };
+  }), [processedData]);
 
   // Don't render chart if no data available
   if (data.length === 0) {
@@ -180,20 +187,25 @@ export function LanePerformance({ data }: LanePerformanceProps) {
         <CardDescription>Performance comparative entre corridors gauche et droit</CardDescription>
       </CardHeader>
       <CardContent>
-        <ReactECharts option={option} style={{ height: "350px" }} />
+        <ReactECharts
+          option={option}
+          style={{ height: "350px" }}
+          notMerge={true}
+          lazyUpdate={true}
+        />
         <div className="grid grid-cols-2 gap-4 mt-4">
           <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
             <div className="text-sm text-muted-foreground mb-1">Corridor Gauche</div>
-            <div className="text-2xl font-bold text-blue-500">{leftStats.count}</div>
+            <div className="text-2xl font-bold text-blue-500">{processedData.leftStats.count}</div>
             <div className="text-xs text-muted-foreground">passages enregistrés</div>
           </div>
           <div className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-lg">
             <div className="text-sm text-muted-foreground mb-1">Corridor Droit</div>
-            <div className="text-2xl font-bold text-pink-500">{rightStats.count}</div>
+            <div className="text-2xl font-bold text-pink-500">{processedData.rightStats.count}</div>
             <div className="text-xs text-muted-foreground">passages enregistrés</div>
           </div>
         </div>
       </CardContent>
     </Card>
   );
-}
+});

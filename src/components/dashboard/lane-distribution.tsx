@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import ReactECharts from "echarts-for-react";
 import { SpeedData, Lane } from "@/types/speed-data";
@@ -8,11 +9,17 @@ interface LaneDistributionProps {
   data: SpeedData[];
 }
 
-export function LaneDistribution({ data }: LaneDistributionProps) {
-  const leftCount = data.filter((d) => d.lane === Lane.Left).length;
-  const rightCount = data.filter((d) => d.lane === Lane.Right).length;
+export const LaneDistribution = React.memo(function LaneDistribution({ data }: LaneDistributionProps) {
+  // Memoize heavy computations - only recalculate when data changes
+  const processedData = useMemo(() => {
+    const leftCount = data.filter((d) => d.lane === Lane.Left).length;
+    const rightCount = data.filter((d) => d.lane === Lane.Right).length;
 
-  const option = {
+    return { leftCount, rightCount };
+  }, [data]);
+
+  // Memoize ECharts option object
+  const option = useMemo(() => ({
     tooltip: {
       trigger: "item",
       formatter: "{b}: {c} ({d}%)",
@@ -53,12 +60,12 @@ export function LaneDistribution({ data }: LaneDistributionProps) {
           },
         },
         data: [
-          { value: leftCount, name: "Voie gauche", itemStyle: { color: "#3b82f6" } },
-          { value: rightCount, name: "Voie droite", itemStyle: { color: "#f97316" } },
+          { value: processedData.leftCount, name: "Voie gauche", itemStyle: { color: "#3b82f6" } },
+          { value: processedData.rightCount, name: "Voie droite", itemStyle: { color: "#f97316" } },
         ],
       },
     ],
-  };
+  }), [processedData]);
 
   // Don't render chart if no data available
   if (data.length === 0) {
@@ -82,8 +89,13 @@ export function LaneDistribution({ data }: LaneDistributionProps) {
         <CardDescription>Distribution des passages par voie</CardDescription>
       </CardHeader>
       <CardContent>
-        <ReactECharts option={option} style={{ height: "300px" }} />
+        <ReactECharts
+          option={option}
+          style={{ height: "300px" }}
+          notMerge={true}
+          lazyUpdate={true}
+        />
       </CardContent>
     </Card>
   );
-}
+});

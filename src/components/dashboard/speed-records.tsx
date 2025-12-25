@@ -49,7 +49,7 @@ type ColumnWidths = {
     created_at: number;
 };
 
-export function SpeedRecords({data}: SpeedRecordsProps) {
+export const SpeedRecords = React.memo(function SpeedRecords({data}: SpeedRecordsProps) {
     const [sortConfig, setSortConfig] = useState<SortConfig>({key: null, direction: "asc"});
     const [filters, setFilters] = useState<ColumnFilters>({
         id: "",
@@ -76,7 +76,7 @@ export function SpeedRecords({data}: SpeedRecordsProps) {
     const startXRef = useRef<number>(0);
     const startWidthRef = useRef<number>(0);
 
-    // Handle column resize
+    // Memoize filter/sort handlers
     const handleResizeStart = useCallback((e: React.MouseEvent, column: keyof ColumnWidths) => {
         e.preventDefault();
         e.stopPropagation();
@@ -115,22 +115,22 @@ export function SpeedRecords({data}: SpeedRecordsProps) {
         }
     }, [isResizing, handleResizeMove, handleResizeEnd]);
 
-    // Handle sort
-    const handleSort = (key: keyof SpeedData) => {
+    // Memoize sort handler
+    const handleSort = useCallback((key: keyof SpeedData) => {
         setSortConfig((current) => ({
             key,
             direction: current.key === key && current.direction === "asc" ? "desc" : "asc",
         }));
-    };
+    }, []);
 
-    // Handle filter change
-    const handleFilterChange = (column: keyof ColumnFilters, value: string) => {
+    // Memoize filter change handler
+    const handleFilterChange = useCallback((column: keyof ColumnFilters, value: string) => {
         setFilters((prev) => ({...prev, [column]: value}));
         setCurrentPage(1); // Reset to first page when filtering
-    };
+    }, []);
 
-    // Clear all filters
-    const clearFilters = () => {
+    // Memoize clear filters handler
+    const clearFilters = useCallback(() => {
         setFilters({
             id: "",
             sensor_name: "",
@@ -139,9 +139,9 @@ export function SpeedRecords({data}: SpeedRecordsProps) {
             created_at: "",
         });
         setCurrentPage(1);
-    };
+    }, []);
 
-    // Filter and sort data
+    // Memoize filtered and sorted data
     const filteredAndSortedData = useMemo(() => {
         let filtered = [...data];
 
@@ -199,18 +199,18 @@ export function SpeedRecords({data}: SpeedRecordsProps) {
         return filtered;
     }, [data, filters, sortConfig]);
 
-    // Pagination
-    const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage);
-    const paginatedData = filteredAndSortedData.slice(
+    // Memoize pagination
+    const totalPages = useMemo(() => Math.ceil(filteredAndSortedData.length / itemsPerPage), [filteredAndSortedData.length, itemsPerPage]);
+    const paginatedData = useMemo(() => filteredAndSortedData.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
-    );
+    ), [filteredAndSortedData, currentPage, itemsPerPage]);
 
-    // Check if any filter is active
-    const hasActiveFilters = Object.values(filters).some((filter) => filter !== "");
+    // Memoize filter check
+    const hasActiveFilters = useMemo(() => Object.values(filters).some((filter) => filter !== ""), [filters]);
 
-    // Render sort icon
-    const renderSortIcon = (column: keyof SpeedData) => {
+    // Memoize render sort icon
+    const renderSortIcon = useCallback((column: keyof SpeedData) => {
         if (sortConfig.key !== column) {
             return <ArrowUpDown className="h-4 w-4"/>;
         }
@@ -219,7 +219,7 @@ export function SpeedRecords({data}: SpeedRecordsProps) {
         ) : (
             <ArrowDown className="h-4 w-4"/>
         );
-    };
+    }, [sortConfig]);
 
     // Don't render if no data available
     if (data.length === 0) {
@@ -498,4 +498,4 @@ export function SpeedRecords({data}: SpeedRecordsProps) {
             </CardContent>
         </Card>
     );
-}
+});

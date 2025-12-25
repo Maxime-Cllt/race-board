@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import ReactECharts from "echarts-for-react";
 import { SpeedData, Lane } from "@/types/speed-data";
@@ -11,23 +12,38 @@ interface SpeedChartProps {
   description?: string;
 }
 
-export function SpeedChart({ data, title = "Vitesses en temps réel", description }: SpeedChartProps) {
-  // Separate data by lane
-  const leftLaneData = data.filter((d) => d.lane === Lane.Left);
-  const rightLaneData = data.filter((d) => d.lane === Lane.Right);
+export const SpeedChart = React.memo(function SpeedChart({
+  data,
+  title = "Vitesses en temps réel",
+  description
+}: SpeedChartProps) {
+  // Memoize heavy computations - only recalculate when data changes
+  const processedData = useMemo(() => {
+    // Separate data by lane
+    const leftLaneData = data.filter((d) => d.lane === Lane.Left);
+    const rightLaneData = data.filter((d) => d.lane === Lane.Right);
 
-  // Get all unique timestamps and sort them
-  const allTimestamps = Array.from(new Set(data.map((d) => d.created_at))).sort();
+    // Get all unique timestamps and sort them
+    const allTimestamps = Array.from(new Set(data.map((d) => d.created_at))).sort();
 
-  // Create maps for quick lookup
-  const leftLaneMap = new Map(leftLaneData.map((d) => [d.created_at, d.speed]));
-  const rightLaneMap = new Map(rightLaneData.map((d) => [d.created_at, d.speed]));
+    // Create maps for quick lookup
+    const leftLaneMap = new Map(leftLaneData.map((d) => [d.created_at, d.speed]));
+    const rightLaneMap = new Map(rightLaneData.map((d) => [d.created_at, d.speed]));
 
-  // Build data arrays with null for missing values
-  const leftSpeeds = allTimestamps.map((ts) => leftLaneMap.get(ts) ?? null);
-  const rightSpeeds = allTimestamps.map((ts) => rightLaneMap.get(ts) ?? null);
+    // Build data arrays with null for missing values
+    const leftSpeeds = allTimestamps.map((ts) => leftLaneMap.get(ts) ?? null);
+    const rightSpeeds = allTimestamps.map((ts) => rightLaneMap.get(ts) ?? null);
+    const timestamps = allTimestamps.map((ts) => format(new Date(ts), "HH:mm"));
 
-  const option = {
+    return {
+      leftSpeeds,
+      rightSpeeds,
+      timestamps,
+    };
+  }, [data]);
+
+  // Memoize ECharts option object - only rebuild when processed data changes
+  const option = useMemo(() => ({
     tooltip: {
       trigger: "axis",
       axisPointer: {
@@ -56,7 +72,7 @@ export function SpeedChart({ data, title = "Vitesses en temps réel", descriptio
     xAxis: {
       type: "category",
       boundaryGap: false,
-      data: allTimestamps.map((ts) => format(new Date(ts), "HH:mm")),
+      data: processedData.timestamps,
       axisLine: {
         lineStyle: {
           color: "#999",
@@ -115,7 +131,7 @@ export function SpeedChart({ data, title = "Vitesses en temps réel", descriptio
             ],
           },
         },
-        data: leftSpeeds,
+        data: processedData.leftSpeeds,
       },
       {
         name: "Voie droite",
@@ -150,10 +166,10 @@ export function SpeedChart({ data, title = "Vitesses en temps réel", descriptio
             ],
           },
         },
-        data: rightSpeeds,
+        data: processedData.rightSpeeds,
       },
     ],
-  };
+  }), [processedData]);
 
   // Don't render chart if no data available
   if (data.length === 0) {
@@ -177,8 +193,13 @@ export function SpeedChart({ data, title = "Vitesses en temps réel", descriptio
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <CardContent>
-        <ReactECharts option={option} style={{ height: "300px" }} />
+        <ReactECharts
+          option={option}
+          style={{ height: "300px" }}
+          notMerge={true}
+          lazyUpdate={true}
+        />
       </CardContent>
     </Card>
   );
-}
+});
