@@ -1,4 +1,4 @@
-import { apiToSpeedData } from '@/types/speed-data';
+import { apiToSpeedData, type SpeedData } from '@/types/speed-data';
 import { config } from '@/config/env';
 import { logger } from '@/lib/logger';
 import { validateSpeedDataAPI, validateSpeedDataAPIArray, validateHealthCheck } from '@/lib/validation';
