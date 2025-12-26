@@ -120,14 +120,16 @@ function extractSystemSettings(settings: AppSettings): SystemSettings {
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<AppSettings>(() => {
-    // Charger les réglages depuis localStorage au démarrage
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const parsedSettings = JSON.parse(stored);
-        return { ...defaultSettings, ...parsedSettings };
-      } catch (error) {
-        logger.error("Erreur lors du chargement des réglages:", error);
+    // Charger les réglages depuis localStorage au démarrage (côté client uniquement)
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          const parsedSettings = JSON.parse(stored);
+          return { ...defaultSettings, ...parsedSettings };
+        } catch (error) {
+          logger.error("Erreur lors du chargement des réglages:", error);
+        }
       }
     }
     return defaultSettings;
@@ -136,7 +138,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   // Sauvegarder les réglages dans localStorage à chaque modification
   useEffect(() => {
-    if (isInitialized) {
+    if (isInitialized && typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     }
   }, [settings, isInitialized]);
@@ -152,7 +154,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const resetSettings = useCallback(() => {
     setSettings(defaultSettings);
-    localStorage.removeItem(STORAGE_KEY);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(STORAGE_KEY);
+    }
   }, []);
 
   // Create specialized update functions for each context
