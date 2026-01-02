@@ -20,7 +20,7 @@ export class SpeedStreamAPI {
    * Get the effective API URL (direct or through proxy)
    */
   private getApiUrl(): string {
-    return config.API_BASE_URL;
+    return config.getDynamicApiUrl();
   }
 
   /**

@@ -16,6 +16,9 @@ export interface AppSettings {
   updateInterval: number; // en ms
   maxDataPoints: number;
 
+  // Configuration API
+  apiUrl: string;
+
   // Affichage - Graphiques de base
   showLaneDistribution: boolean;
   showSensorStats: boolean;
@@ -46,6 +49,7 @@ export const defaultSettings: AppSettings = {
   customEndDate: null,
   updateInterval: 3000,
   maxDataPoints: 120,
+  apiUrl: process.env.NEXT_PUBLIC_API_URL || "http://192.168.1.75:8080",
   showLaneDistribution: true,
   showSensorStats: true,
   showSpeedChart: true,

@@ -11,8 +11,31 @@ import {logger} from '@/lib/logger';
 export type AppMode = 'SIMULATION' | 'DEV' | 'PROD';
 
 export const APP_MODE = (process.env.NEXT_PUBLIC_APP_MODE || 'SIMULATION') as AppMode;
+
+/**
+ * Get the API URL from localStorage if available (client-side only)
+ * Falls back to environment variable
+ */
+function getDynamicApiUrl(): string {
+    if (typeof window !== 'undefined') {
+        try {
+            const stored = localStorage.getItem('race-board-settings');
+            if (stored) {
+                const settings = JSON.parse(stored);
+                if (settings.apiUrl) {
+                    return settings.apiUrl;
+                }
+            }
+        } catch (error) {
+            logger.error('Error reading API URL from localStorage:', error);
+        }
+    }
+    // Fallback to environment variable
+    return process.env.NEXT_PUBLIC_API_URL ?? '';
+}
+
 // Empty string means use relative paths (for nginx routing)
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
+export const API_BASE_URL = getDynamicApiUrl();
 export const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN || '';
 
 export const isSimulation = APP_MODE === 'SIMULATION';
@@ -25,7 +48,7 @@ export const requiresAPI = isDevelopment || isProduction;
 
 // Get the effective SSE stream URL
 export function getEffectiveStreamUrl(): string {
-    return `${API_BASE_URL}/api/speeds/stream`;
+    return `${getDynamicApiUrl()}/api/speeds/stream`;
 }
 
 /**
@@ -92,4 +115,5 @@ export const config = {
     requiresAPI,
     API_BASE_URL,
     getEffectiveStreamUrl,
+    getDynamicApiUrl,
 } as const;

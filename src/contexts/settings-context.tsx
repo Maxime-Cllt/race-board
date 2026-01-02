@@ -38,6 +38,7 @@ interface FilterSettings {
 interface SystemSettings {
   updateInterval: number;
   maxDataPoints: number;
+  apiUrl: string;
 }
 
 interface DisplaySettingsContextType {
@@ -111,6 +112,7 @@ function extractSystemSettings(settings: AppSettings): SystemSettings {
   return {
     updateInterval: settings.updateInterval,
     maxDataPoints: settings.maxDataPoints,
+    apiUrl: settings.apiUrl,
   };
 }
 
@@ -343,6 +345,23 @@ export function useMaxDataPoints() {
     setMaxDataPoints: useCallback(
       (max: number) => {
         updateSettings({ maxDataPoints: max });
+      },
+      [updateSettings]
+    ),
+  };
+}
+
+/**
+ * Hook to get and update API URL
+ * Only re-renders when API URL changes
+ */
+export function useApiUrl() {
+  const { settings, updateSettings } = useSystemSettings();
+  return {
+    apiUrl: settings.apiUrl,
+    setApiUrl: useCallback(
+      (url: string) => {
+        updateSettings({ apiUrl: url });
       },
       [updateSettings]
     ),

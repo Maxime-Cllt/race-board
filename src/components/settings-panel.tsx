@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useSettings } from "@/contexts/settings-context";
+import { useSettings, useApiUrl } from "@/contexts/settings-context";
 import { Lane } from "@/types/speed-data";
 import { DateRangeMode } from "@/types/settings";
 import { format } from "date-fns";
@@ -43,7 +43,9 @@ interface SettingsPanelProps {
 
 export function SettingsPanel({ availableSensors }: SettingsPanelProps) {
   const { settings, updateSettings, resetSettings } = useSettings();
+  const { apiUrl, setApiUrl } = useApiUrl();
   const [open, setOpen] = useState(false);
+  const [tempApiUrl, setTempApiUrl] = useState(apiUrl);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   const [shareableUrl, setShareableUrl] = useState<string>("");
   const [localIP, setLocalIP] = useState<string>("");
@@ -105,6 +107,11 @@ export function SettingsPanel({ availableSensors }: SettingsPanelProps) {
     updateQRCode();
   }, [updateQRCode]);
 
+  // Sync tempApiUrl with apiUrl when it changes
+  useEffect(() => {
+    setTempApiUrl(apiUrl);
+  }, [apiUrl]);
+
   const toggleSensor = (sensor: string) => {
     const newSensors = settings.selectedSensors.includes(sensor)
       ? settings.selectedSensors.filter((s) => s !== sensor)
@@ -130,6 +137,12 @@ export function SettingsPanel({ availableSensors }: SettingsPanelProps) {
       link.download = "race-board-qrcode.png";
       link.click();
     }
+  };
+
+  const handleApiUrlSave = () => {
+    setApiUrl(tempApiUrl);
+    // Force reload to apply new API URL
+    window.location.reload();
   };
 
   return (
@@ -408,6 +421,49 @@ export function SettingsPanel({ availableSensors }: SettingsPanelProps) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          {/* Configuration de l'API */}
+          <div className="space-y-4 border-t pt-4">
+            <h3 className="text-sm font-semibold">Configuration de l&apos;API</h3>
+            <p className="text-xs text-muted-foreground">
+              Changez l&apos;adresse IP de l&apos;API (l&apos;application se rechargera automatiquement)
+            </p>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="api-url" className="text-sm">
+                  Adresse de l&apos;API
+                </Label>
+                <input
+                  id="api-url"
+                  type="text"
+                  className="w-full px-3 py-2 border rounded-md text-sm"
+                  placeholder="http://192.168.1.75:8080"
+                  value={tempApiUrl}
+                  onChange={(e) => setTempApiUrl(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Exemple : http://192.168.1.75:8080
+                </p>
+              </div>
+              {tempApiUrl !== apiUrl && (
+                <Button
+                  variant="default"
+                  className="w-full"
+                  onClick={handleApiUrlSave}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Sauvegarder et recharger
+                </Button>
+              )}
+              {tempApiUrl === apiUrl && (
+                <div className="p-3 bg-green-50 dark:bg-green-950 rounded-md">
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    ✓ URL actuelle : {apiUrl}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
