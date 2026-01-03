@@ -10,7 +10,7 @@ import { fetchWithAgent } from '@/lib/fetch-agent';
  * 3. We need to properly forward the streaming response
  */
 
-const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://127.0.0.1';
+const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.100:8080';
 const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN || '';
 
 export async function GET() {

@@ -49,7 +49,7 @@ export const defaultSettings: AppSettings = {
   customEndDate: null,
   updateInterval: 3000,
   maxDataPoints: 120,
-  apiUrl: process.env.NEXT_PUBLIC_API_URL || "http://192.168.1.75:8080",
+  apiUrl: process.env.NEXT_PUBLIC_API_URL || "http://192.168.1.100:8080",
   showLaneDistribution: true,
   showSensorStats: true,
   showSpeedChart: true,

@@ -14,7 +14,7 @@ import { fetchWithAgent } from '@/lib/fetch-agent';
  * Example: /api/proxy/speeds/latest -> https://backend-api.com/api/speeds/latest
  */
 
-const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://127.0.0.1';
+const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.100:8080';
 const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN || '';
 
 async function proxyRequest(request: NextRequest, method: string) {

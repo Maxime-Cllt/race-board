@@ -193,7 +193,7 @@ export function SettingsPanel({ availableSensors }: SettingsPanelProps) {
                 <input
                   id="manual-ip"
                   type="text"
-                  placeholder={localIP || "ex: 192.168.1.75"}
+                  placeholder={localIP || "ex: 192.168.1.100"}
                   className="flex-1 px-3 py-2 border rounded-md text-sm"
                   value={manualIP}
                   onChange={(e) => setManualIP(e.target.value)}
@@ -439,12 +439,12 @@ export function SettingsPanel({ availableSensors }: SettingsPanelProps) {
                   id="api-url"
                   type="text"
                   className="w-full px-3 py-2 border rounded-md text-sm"
-                  placeholder="http://192.168.1.75:8080"
+                  placeholder="http://192.168.1.100:8080"
                   value={tempApiUrl}
                   onChange={(e) => setTempApiUrl(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Exemple : http://192.168.1.75:8080
+                  Exemple : http://192.168.1.100:8080
                 </p>
               </div>
               {tempApiUrl !== apiUrl && (
