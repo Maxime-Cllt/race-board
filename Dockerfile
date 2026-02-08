@@ -1,19 +1,19 @@
-# --- Stage 1: Base (Installation de pnpm une seule fois) ---
+# --- Stage 1: Base ---
 FROM node:25-alpine AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+# Installation propre de pnpm
+RUN npm install -g pnpm@latest
 WORKDIR /app
 
-# --- Stage 2: Deps (Cache des dépendances) ---
+# --- Stage 2: Deps ---
 FROM base AS deps
+# libc6-compat est nécessaire pour certaines dépendances natives sur Alpine
 RUN apk add --no-cache libc6-compat
 COPY package.json pnpm-lock.yaml* ./
-# On utilise --frozen-lockfile pour garantir l'intégrité
 RUN pnpm install --frozen-lockfile
 
 # --- Stage 3: Builder ---
 FROM base AS builder
+WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
@@ -29,24 +29,27 @@ ENV NEXT_PUBLIC_APP_MODE=${NEXT_PUBLIC_APP_MODE} \
 
 RUN pnpm run build
 
-# --- Stage 4: Runner ---
+# --- Stage 4: Runner (Poids plume) ---
 FROM node:25-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3001
+ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+# Création de l'utilisateur sécurité
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
+# On ne copie que le standalone et les assets statiques
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
-EXPOSE 3001
+EXPOSE 3000
 
+# On lance node directement, pas besoin de pnpm en runtime !
 CMD ["node", "server.js"]
