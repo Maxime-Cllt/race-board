@@ -34,7 +34,8 @@ const nextConfig: NextConfig = {
             }
         }
 
-        // Add wildcard for HTTPS
+        // Add wildcards for HTTP and HTTPS
+        connectSources.push('http:');
         connectSources.push('https:');
 
         return [
