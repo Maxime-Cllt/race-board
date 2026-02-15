@@ -33,11 +33,8 @@ RUN pnpm run build
 FROM node:25-alpine AS runner
 WORKDIR /app
 
-ARG APP_PORT=3000
-
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=${APP_PORT}
 ENV HOSTNAME="0.0.0.0"
 
 # Création de l'utilisateur sécurité
@@ -51,7 +48,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
-EXPOSE ${APP_PORT}
+# PORT is set at runtime via docker-compose environment (APP_PORT)
 
 # On lance node directement, pas besoin de pnpm en runtime !
 CMD ["node", "server.js"]

@@ -8,14 +8,13 @@ services:
         NEXT_PUBLIC_APP_MODE: ${NEXT_PUBLIC_APP_MODE:-PROD}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://192.168.1.100:8080}
         NEXT_PUBLIC_API_TOKEN: ${NEXT_PUBLIC_API_TOKEN}
-        APP_PORT: ${APP_PORT:-3000}
 
     ports:
-      - "${APP_PORT:-3000}:${APP_PORT:-3000}"
+      - "${APP_PORT}:${APP_PORT}"
 
     environment:
       - NODE_ENV=production
-      - PORT=${APP_PORT:-3000}
+      - PORT=${APP_PORT}
       - HOSTNAME=0.0.0.0
 
     # Optionally, use a specific env file
@@ -37,7 +36,7 @@ services:
 
     # Health check to ensure container is running properly
     healthcheck:
-      test: ["CMD", "sh", "-c", "wget --no-verbose --tries=1 --spider http://localhost:${APP_PORT:-3000}/"]
+      test: ["CMD", "sh", "-c", "wget --no-verbose --tries=1 --spider http://localhost:$PORT/"]
       interval: 30s
       timeout: 10s
       retries: 3
