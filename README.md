@@ -104,13 +104,13 @@ cp .env.example .env.local
 ### 3. Install Dependencies
 
 ```bash
-pnpm install
+bun install
 ```
 
 ### 4. Run the Application
 
 ```bash
-pnpm run dev
+bun run dev
 ```
 
 The application will be available at `http://localhost:3001`.
@@ -128,7 +128,7 @@ The application will be available at `http://localhost:3001`.
 To run unit tests, use the following command:
 
 ```bash
-pnpm run test
+bun run test
 ```
 
 ### Linting
@@ -136,7 +136,7 @@ pnpm run test
 To check for linting issues, run:
 
 ```bash
-pnpm run lint
+bun run lint
 ```
 
 ### Format Code
@@ -144,7 +144,7 @@ pnpm run lint
 To format the codebase, use:
 
 ```bash
-pnpm run format
+bun run format
 ```
 
 ## 🤝 Contributing

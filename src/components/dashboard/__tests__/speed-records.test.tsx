@@ -253,11 +253,13 @@ describe('SpeedRecords', () => {
       // Should show "Page 1 sur 1" since there's only one page
       expect(screen.getByText(/Page 1 sur 1/i)).toBeInTheDocument();
 
-      // Previous and Next buttons should be disabled on single page
-      const prevButton = screen.getByRole('button', { name: /Précédent/i });
-      const nextButton = screen.getByRole('button', { name: /Suivant/i });
-      expect(prevButton).toBeDisabled();
-      expect(nextButton).toBeDisabled();
+      // Navigation controls are hidden when there is only one page
+      expect(
+        screen.queryByRole('button', { name: /Précédent/i })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /Suivant/i })
+      ).not.toBeInTheDocument();
     });
   });
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { useRealtimeSpeedData } from '../use-realtime-speed-data';
 import { config } from '@/config/env';
 
@@ -133,11 +133,11 @@ describe('useRealtimeSpeedData', () => {
       const initialLength = result.current.data.length;
 
       // Advance timers to trigger interval
-      vi.advanceTimersByTime(1000);
-
-      await waitFor(() => {
-        expect(result.current.data.length).toBeGreaterThan(initialLength);
+      await act(async () => {
+        vi.advanceTimersByTime(1000);
       });
+
+      expect(result.current.data.length).toBeGreaterThan(initialLength);
     });
   });
 
