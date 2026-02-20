@@ -136,13 +136,13 @@ If you suspect a security breach:
 ### Regular Updates
 ```bash
 # Check for vulnerabilities
-pnpm audit
+bun audit
 
 # Update dependencies
-pnpm update
+bun update
 
 # Check for outdated packages
-pnpm outdated
+bun outdated
 ```
 
 ### Automated Scanning

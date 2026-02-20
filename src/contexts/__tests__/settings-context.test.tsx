@@ -234,8 +234,15 @@ describe('SettingsContext', () => {
         result.current.resetSettings();
       });
 
-      const savedSettings = localStorage.getItem('race-board-settings');
-      expect(savedSettings).toBeNull();
+      // Settings are persisted after reset, so storage should contain defaults.
+      const savedSettingsRaw = localStorage.getItem('race-board-settings');
+      expect(savedSettingsRaw).not.toBeNull();
+
+      const savedSettings = JSON.parse(savedSettingsRaw || '{}');
+      expect(savedSettings.updateInterval).toBe(3000);
+      expect(savedSettings.maxDataPoints).toBe(120);
+      expect(savedSettings.selectedSensors).toEqual([]);
+      expect(savedSettings.selectedLanes).toEqual([Lane.Left, Lane.Right]);
     });
 
     it('resets selected sensors to empty array', () => {

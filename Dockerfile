@@ -1,15 +1,15 @@
 # --- Stage 1: Base ---
 FROM node:25-alpine AS base
-# Installation propre de pnpm
-RUN npm install -g pnpm@latest
+# Installation de bun (sans npm)
+COPY --from=oven/bun:1.2.22-alpine /usr/local/bin/bun /usr/local/bin/bun
 WORKDIR /app
 
 # --- Stage 2: Deps ---
 FROM base AS deps
 # libc6-compat est nécessaire pour certaines dépendances natives sur Alpine
 RUN apk add --no-cache libc6-compat
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile
+COPY package.json bun.lock* ./
+RUN bun install
 
 # --- Stage 3: Builder ---
 FROM base AS builder
@@ -27,7 +27,7 @@ ENV NEXT_PUBLIC_APP_MODE=${NEXT_PUBLIC_APP_MODE} \
     NEXT_PUBLIC_API_TOKEN=${NEXT_PUBLIC_API_TOKEN} \
     NEXT_TELEMETRY_DISABLED=1
 
-RUN pnpm run build
+RUN bun run build
 
 # --- Stage 4: Runner (Poids plume) ---
 FROM node:25-alpine AS runner
@@ -50,5 +50,5 @@ USER nextjs
 
 # PORT is set at runtime via docker-compose environment (APP_PORT)
 
-# On lance node directement, pas besoin de pnpm en runtime !
+# On lance node directement, pas besoin de bun en runtime !
 CMD ["node", "server.js"]
